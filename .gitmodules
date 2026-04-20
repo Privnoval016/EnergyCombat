@@ -1,3 +1,6 @@
 [submodule "EnergyCombat/Assets/Extensions"]
 	path = EnergyCombat/Assets/Extensions
 	url = https://github.com/Privnoval016/Unity-Extensions.git
+[submodule "EnergyCombat/Assets/QuestSystem"]
+	path = EnergyCombat/Assets/QuestSystem
+	url = https://github.com/Privnoval016/Unity-QuestSystem.git
