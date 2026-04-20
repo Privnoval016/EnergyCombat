@@ -2,15 +2,14 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
 #
-.utmp/
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
-/[Uu]ser[Ss]ettings/
-*.log
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -61,7 +60,6 @@ sysinfo.txt
 *.apk
 *.aab
 *.unitypackage
-*.unitypackage.meta
 *.app
 
 # Crashlytics generated file
@@ -73,3 +71,22 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# --- FMOD Studio Project ---
+HackNSlash/FMOD/Build/
+HackNSlash/FMOD/.cache/
+
+# FMOD Unity Integration
+!/[Aa]ssets/Plugins/FMOD/**/lib/*
+/[Aa]ssets/Plugins/FMOD/Cache/*
+
+# FMOD Gizmos & Editor assets (do not ignore)
+!/[Aa]ssets/Gizmos/FMOD/*
+!/[Aa]ssets/Editor Default Resources/FMOD/*
+
+# Ignore copied .bank files in StreamingAssets
+/[Aa]ssets/StreamingAssets/**/*.bank
+/[Aa]ssets/StreamingAssets/**/*.bank.meta
+
+# FMOD logs
+fmod_editor.log
