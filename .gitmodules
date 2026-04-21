@@ -4,3 +4,9 @@
 [submodule "EnergyCombat/Assets/QuestSystem"]
 	path = EnergyCombat/Assets/QuestSystem
 	url = https://github.com/Privnoval016/Unity-QuestSystem.git
+[submodule "EnergyCombat/Assets/EnergyCombat/Assets/StateMachine"]
+	path = EnergyCombat/Assets/EnergyCombat/Assets/StateMachine
+	url = https://github.com/Privnoval016/Unity-StateMachine.git
+[submodule "EnergyCombat/Assets/StateMachine"]
+	path = EnergyCombat/Assets/StateMachine
+	url = https://github.com/Privnoval016/Unity-StateMachine.git
