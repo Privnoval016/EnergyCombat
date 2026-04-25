@@ -1,34 +1,20 @@
-using DynamicPhysics.Core;
 using UnityEngine;
 
-namespace DynamicPhysics.Abilities
+namespace DynamicPhysics
 {
     /**
      * <summary>
      * Directional burst movement ability with cooldown. Overrides horizontal velocity
      * for a short duration, optionally reducing gravity during the dash window.
      * </summary>
-     *
-     * <remarks>
-     * Sets <see cref="MotionFlags.Dashing"/> while active, which causes the
-     * <see cref="Pipeline.Stages.InputSteeringStage"/> to heavily reduce player control.
-     * The dash direction defaults to the input direction or character forward if no input.
-     * </remarks>
      */
     public class DashAbility : IMotionAbility
     {
         #region Configuration
 
-        /** <summary>Dash speed in units per second.</summary> */
         public float DashSpeed { get; set; }
-
-        /** <summary>Duration of the dash in seconds.</summary> */
         public float DashDuration { get; set; }
-
-        /** <summary>Cooldown between dashes in seconds.</summary> */
         public float Cooldown { get; set; }
-
-        /** <summary>Gravity multiplier during dash (0 = weightless dash).</summary> */
         public float DashGravityScale { get; set; }
 
         #endregion
@@ -36,7 +22,6 @@ namespace DynamicPhysics.Abilities
         #region State
 
         public bool IsActive { get; private set; }
-
         private float _dashTimer;
         private float _cooldownTimer;
         private Vector3 _dashDirection;
@@ -52,9 +37,10 @@ namespace DynamicPhysics.Abilities
             DashGravityScale = dashGravityScale;
         }
 
+        public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
+
         public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
         {
-            // Tick cooldown
             if (_cooldownTimer > 0f)
             {
                 _cooldownTimer -= context.DeltaTime;
@@ -65,7 +51,6 @@ namespace DynamicPhysics.Abilities
             {
                 if (requests[i].Type == MotionRequestType.Dash)
                 {
-                    // Use request direction, fall back to input direction, then character forward
                     _dashDirection = requests[i].Direction;
                     if (_dashDirection.sqrMagnitude < 0.01f)
                     {
@@ -80,7 +65,6 @@ namespace DynamicPhysics.Abilities
                     _dashDirection.y = 0f;
                     float mag = _dashDirection.magnitude;
                     if (mag > 0.001f) _dashDirection *= 1f / mag;
-
                     return true;
                 }
             }
@@ -93,29 +77,21 @@ namespace DynamicPhysics.Abilities
             IsActive = true;
             _dashTimer = DashDuration;
 
-            // Set dash velocity
             Vector3 vel = _dashDirection * DashSpeed;
             vel.y = 0f;
             context.Velocity = vel;
-
-            context.Flags |= MotionFlags.Dashing;
+            context.SetTag(MotionTag.Dashing);
         }
 
         public void Tick(MotionContext context, float deltaTime)
         {
             _dashTimer -= deltaTime;
-
-            // Reduce gravity during dash
             context.GravityScale *= DashGravityScale;
 
-            // Maintain dash velocity (prevent steering from overriding)
             context.Velocity.x = _dashDirection.x * DashSpeed;
             context.Velocity.z = _dashDirection.z * DashSpeed;
 
-            if (_dashTimer <= 0f)
-            {
-                Deactivate(context);
-            }
+            if (_dashTimer <= 0f) Deactivate(context);
         }
 
         public Vector3 GetVelocityInfluence(MotionContext context) => Vector3.zero;
@@ -124,7 +100,7 @@ namespace DynamicPhysics.Abilities
         {
             IsActive = false;
             _cooldownTimer = Cooldown;
-            context.Flags &= ~MotionFlags.Dashing;
+            context.RemoveTag(MotionTag.Dashing);
         }
     }
 }

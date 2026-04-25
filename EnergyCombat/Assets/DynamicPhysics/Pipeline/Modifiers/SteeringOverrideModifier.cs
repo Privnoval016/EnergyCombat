@@ -1,6 +1,5 @@
-using DynamicPhysics.Core;
 
-namespace DynamicPhysics.Pipeline.Modifiers
+namespace DynamicPhysics
 {
     /**
      * <summary>

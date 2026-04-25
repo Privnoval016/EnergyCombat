@@ -1,8 +1,6 @@
-using DynamicPhysics.Core;
-using DynamicPhysics.Orchestration;
 using UnityEngine;
 
-namespace DynamicPhysics.Pipeline.Stages
+namespace DynamicPhysics
 {
     /**
      * <summary>
@@ -14,7 +12,6 @@ namespace DynamicPhysics.Pipeline.Stages
      * <remarks>
      * At high speed, control is reduced, producing natural sliding when reversing direction.
      * At low speed, control is increased, producing responsive tight movement.
-     * The stage also handles camera-relative input conversion and friction-based deceleration.
      * Uses sqrMagnitude and avoids normalization where possible for performance.
      * </remarks>
      */
@@ -22,8 +19,6 @@ namespace DynamicPhysics.Pipeline.Stages
     {
         /** <summary>Execution priority. Runs first in the pipeline.</summary> */
         public int Priority => InfluencePriority.InputSteering;
-
-
 
         /**
          * <summary>
@@ -37,14 +32,14 @@ namespace DynamicPhysics.Pipeline.Stages
             float dt = context.DeltaTime;
 
             // Suppress input when stunned
-            if ((context.Flags & MotionFlags.Stunned) != 0) return;
+            if (context.HasTag(MotionTag.Stunned)) return;
 
-            // Reduce control during dashing, wall running, swinging, or sliding
+            // Reduce control during special movement states
             float contextualControl = 1f;
-            if ((context.Flags & MotionFlags.Dashing) != 0) contextualControl = 0.05f;
-            else if ((context.Flags & MotionFlags.WallRunning) != 0) contextualControl = 0.15f;
-            else if ((context.Flags & MotionFlags.Swinging) != 0) contextualControl = 0.3f;
-            else if ((context.Flags & MotionFlags.SlidingCrouch) != 0) contextualControl = 0.2f;
+            if (context.HasTag(MotionTag.Dashing)) contextualControl = 0.05f;
+            else if (context.HasTag(MotionTag.WallRunning)) contextualControl = 0.15f;
+            else if (context.HasTag(MotionTag.Swinging)) contextualControl = 0.3f;
+            else if (context.HasTag(MotionTag.SlidingCrouch)) contextualControl = 0.2f;
 
             // Camera-relative input direction (horizontal plane)
             Vector3 inputDir = input.CameraForward * input.MoveInput.y + input.CameraRight * input.MoveInput.x;
@@ -55,7 +50,6 @@ namespace DynamicPhysics.Pipeline.Stages
 
             if (hasInput)
             {
-                // Fast inverse sqrt approximation: normalize only when needed
                 float invMag = 1f / Mathf.Sqrt(inputSqrMag);
                 inputDir *= invMag;
             }
@@ -67,7 +61,7 @@ namespace DynamicPhysics.Pipeline.Stages
             float currentSpeed = currentSpeedSqr > 0.001f ? Mathf.Sqrt(currentSpeedSqr) : 0f;
 
             // Air control multiplier
-            bool airborne = (context.Flags & MotionFlags.Airborne) != 0;
+            bool airborne = context.HasTag(MotionTag.Airborne);
             float airMult = airborne ? config.AirControl : 1f;
 
             // Speed-dependent control: lerp between low-speed (snappy) and high-speed (drifty)
@@ -77,17 +71,15 @@ namespace DynamicPhysics.Pipeline.Stages
 
             if (hasInput)
             {
-                // Target velocity
                 Vector3 targetVel = inputDir * steering.MaxSpeed;
                 context.DesiredVelocity = targetVel;
 
-                // Velocity delta
                 Vector3 delta = targetVel - horizontalVel;
                 float deltaMag = delta.magnitude;
 
                 if (deltaMag > 0.001f)
                 {
-                    // Angular steering limit: rotate current velocity toward target direction
+                    // Angular steering limit
                     if (currentSpeed > 0.5f)
                     {
                         float maxAngle = steering.MaxTurnRate * dt * controlFactor;
@@ -106,7 +98,6 @@ namespace DynamicPhysics.Pipeline.Stages
             }
             else
             {
-                // No input: apply deceleration / friction
                 context.DesiredVelocity = Vector3.zero;
 
                 if (currentSpeed > 0.01f)
@@ -120,7 +111,6 @@ namespace DynamicPhysics.Pipeline.Stages
                 }
             }
 
-            // Write back horizontal velocity, preserving vertical
             context.Velocity.x = horizontalVel.x;
             context.Velocity.z = horizontalVel.z;
         }

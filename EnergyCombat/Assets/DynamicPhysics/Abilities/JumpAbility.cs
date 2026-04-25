@@ -1,44 +1,22 @@
-using DynamicPhysics.Core;
 using UnityEngine;
 
-namespace DynamicPhysics.Abilities
+namespace DynamicPhysics
 {
     /**
      * <summary>
      * Full-featured jump ability with coyote time, jump buffering, variable jump height,
-     * and apex hang. Produces physically consistent jump arcs while preserving game-feel
-     * through input-timing systems.
+     * and apex hang. Jump impulse derived from desired height: v₀ = √(2gh).
      * </summary>
-     *
-     * <remarks>
-     * <para><b>Coyote time</b>: Jump request remains valid for a short window after leaving ground.</para>
-     * <para><b>Jump buffering</b>: Jump input pressed slightly before landing triggers automatically on contact.</para>
-     * <para><b>Variable height</b>: Releasing jump early multiplies upward velocity by a cut factor.</para>
-     * <para><b>Apex hang</b>: Gravity is reduced when vertical velocity approaches zero at the jump peak.</para>
-     *
-     * Jump impulse is derived from desired height using kinematics: v₀ = √(2 * g * h).
-     * </remarks>
      */
     public class JumpAbility : IMotionAbility
     {
         #region Configuration
 
-        /** <summary>Desired jump height in world units.</summary> */
         public float JumpHeight { get; set; }
-
-        /** <summary>Duration in seconds after leaving ground where jump is still valid.</summary> */
         public float CoyoteTime { get; set; }
-
-        /** <summary>Duration in seconds before landing where a jump request is buffered.</summary> */
         public float JumpBufferTime { get; set; }
-
-        /** <summary>Multiplier on upward velocity when jump button is released early (0-1).</summary> */
         public float JumpCutMultiplier { get; set; }
-
-        /** <summary>Vertical speed threshold below which apex hang activates.</summary> */
         public float ApexThreshold { get; set; }
-
-        /** <summary>Gravity multiplier during apex hang (typically 0.3-0.5).</summary> */
         public float ApexGravityMultiplier { get; set; }
 
         #endregion
@@ -46,7 +24,6 @@ namespace DynamicPhysics.Abilities
         #region State
 
         public bool IsActive { get; private set; }
-
         private float _lastGroundedTime;
         private float _lastJumpRequestTime;
         private bool _jumpConsumed;
@@ -64,23 +41,22 @@ namespace DynamicPhysics.Abilities
             JumpCutMultiplier = jumpCutMultiplier;
             ApexThreshold = apexThreshold;
             ApexGravityMultiplier = apexGravityMultiplier;
-
             _lastGroundedTime = float.NegativeInfinity;
             _lastJumpRequestTime = float.NegativeInfinity;
         }
+
+        public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
 
         public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
         {
             float now = Time.time;
 
-            // Track grounded state for coyote time
-            if ((context.Flags & MotionFlags.Grounded) != 0)
+            if (context.HasTag(MotionTag.Grounded))
             {
                 _lastGroundedTime = now;
                 _jumpConsumed = false;
             }
 
-            // Check for jump request
             for (int i = 0; i < requestCount; i++)
             {
                 if (requests[i].Type == MotionRequestType.Jump)
@@ -90,7 +66,6 @@ namespace DynamicPhysics.Abilities
                 }
             }
 
-            // Can jump if: request is buffered AND (grounded OR within coyote window) AND not already consumed
             bool hasRequest = (now - _lastJumpRequestTime) <= JumpBufferTime;
             bool hasGround = (now - _lastGroundedTime) <= CoyoteTime;
 
@@ -103,36 +78,29 @@ namespace DynamicPhysics.Abilities
             _jumpConsumed = true;
             _jumpCutApplied = false;
 
-            // Calculate jump impulse: v₀ = √(2 * g * h)
             float gravity = Mathf.Abs(Physics.gravity.y);
             float jumpSpeed = Mathf.Sqrt(2f * gravity * JumpHeight);
-
-            // Set vertical velocity to jump speed (overwrite, not additive, for consistency)
             context.Velocity.y = jumpSpeed;
 
-            // Clear grounded flags
-            context.Flags &= ~MotionFlags.Grounded;
-            context.Flags |= MotionFlags.Airborne;
+            context.RemoveTag(MotionTag.Grounded);
+            context.SetTag(MotionTag.Airborne);
         }
 
         public void Tick(MotionContext context, float deltaTime)
         {
-            // Variable jump height: if jump released early, cut upward velocity
             if (!context.Input.JumpHeld && context.Velocity.y > 0f && !_jumpCutApplied)
             {
                 context.Velocity.y *= JumpCutMultiplier;
                 _jumpCutApplied = true;
             }
 
-            // Apex hang: reduce gravity when near the peak
             float absVy = Mathf.Abs(context.Velocity.y);
-            if (absVy < ApexThreshold && (context.Flags & MotionFlags.Airborne) != 0)
+            if (absVy < ApexThreshold && context.HasTag(MotionTag.Airborne))
             {
                 context.GravityScale *= ApexGravityMultiplier;
             }
 
-            // Deactivate when landing
-            if ((context.Flags & MotionFlags.Grounded) != 0 && context.Velocity.y <= 0.01f)
+            if (context.HasTag(MotionTag.Grounded) && context.Velocity.y <= 0.01f)
             {
                 Deactivate(context);
             }

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DynamicPhysics.Abilities
+namespace DynamicPhysics
 {
     /**
      * <summary>

@@ -1,7 +1,5 @@
-using DynamicPhysics.Core;
-using DynamicPhysics.Orchestration;
 
-namespace DynamicPhysics.Pipeline.Stages
+namespace DynamicPhysics
 {
     /**
      * <summary>

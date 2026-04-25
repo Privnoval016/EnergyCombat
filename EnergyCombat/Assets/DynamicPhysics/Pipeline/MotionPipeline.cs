@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using DynamicPhysics.Core;
-using DynamicPhysics.Orchestration;
 
-namespace DynamicPhysics.Pipeline
+namespace DynamicPhysics
 {
     /**
      * <summary>

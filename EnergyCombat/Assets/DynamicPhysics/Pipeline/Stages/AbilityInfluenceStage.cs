@@ -1,8 +1,6 @@
-using DynamicPhysics.Core;
-using DynamicPhysics.Orchestration;
 using UnityEngine;
 
-namespace DynamicPhysics.Pipeline.Stages
+namespace DynamicPhysics
 {
     /**
      * <summary>

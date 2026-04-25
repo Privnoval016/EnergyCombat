@@ -1,7 +1,6 @@
-using DynamicPhysics.Core;
 using UnityEngine;
 
-namespace DynamicPhysics.Abilities
+namespace DynamicPhysics
 {
     /**
      * <summary>
@@ -11,9 +10,13 @@ namespace DynamicPhysics.Abilities
      * </summary>
      *
      * <remarks>
-     * Abilities are registered with the <see cref="Orchestration.MotionOrchestrator"/>
-     * and persist across frames. The orchestrator manages activation/deactivation
-     * based on incoming <see cref="MotionRequest"/> objects and ability conditions.
+     * Abilities are registered with the <see cref="MotionOrchestrator"/> and persist across frames.
+     * The orchestrator routes all <see cref="MotionRequest"/> objects through abilities:
+     * <list type="number">
+     *   <item>Active abilities receive requests via <see cref="TryConsumeRequest"/> first (e.g., wall run intercepts jump → wall jump).</item>
+     *   <item>Unconsumed requests are passed to inactive abilities via <see cref="CanActivate"/>.</item>
+     * </list>
+     * This ensures all request handling lives in the ability layer, not the orchestrator.
      * </remarks>
      */
     public interface IMotionAbility
@@ -23,12 +26,30 @@ namespace DynamicPhysics.Abilities
 
         /**
          * <summary>
+         * Called on active abilities before <see cref="CanActivate"/>. Allows an active ability
+         * to intercept and consume a request meant for another ability.
+         * Return true to consume the request (it won't be passed further).
+         * </summary>
+         *
+         * <example>
+         * WallRunAbility intercepts Jump requests to perform a wall jump instead of a normal jump.
+         * </example>
+         *
+         * <param name="context">Current motion state.</param>
+         * <param name="request">The request to potentially consume.</param>
+         * <returns>True if this ability consumed the request.</returns>
+         */
+        bool TryConsumeRequest(MotionContext context, MotionRequest request);
+
+        /**
+         * <summary>
          * Checks whether this ability can activate given the current motion state and pending requests.
-         * Called every tick for inactive abilities.
+         * Called every tick for inactive abilities with requests that were not consumed.
          * </summary>
          *
          * <param name="context">Current motion state.</param>
-         * <param name="requests">Pending motion requests from the gameplay layer.</param>
+         * <param name="requests">Pending unconsumed motion requests.</param>
+         * <param name="requestCount">Number of valid entries in the requests array.</param>
          * <returns>True if this ability should activate this frame.</returns>
          */
         bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount);
@@ -36,7 +57,6 @@ namespace DynamicPhysics.Abilities
         /**
          * <summary>
          * Called when the ability transitions from inactive to active.
-         * Use to set initial state, flags, or one-time velocity impulses.
          * </summary>
          *
          * <param name="context">Current motion state.</param>
@@ -46,7 +66,6 @@ namespace DynamicPhysics.Abilities
         /**
          * <summary>
          * Called every fixed tick while this ability is active.
-         * Use to update internal timers, check exit conditions, and prepare velocity influences.
          * </summary>
          *
          * <param name="context">Current motion state.</param>
@@ -57,18 +76,16 @@ namespace DynamicPhysics.Abilities
         /**
          * <summary>
          * Returns this ability's additive velocity contribution for the current frame.
-         * Called by the AbilityInfluenceStage after Tick.
          * </summary>
          *
          * <param name="context">Current motion state.</param>
-         * <returns>Velocity to add to the context. Return Vector3.zero for no contribution.</returns>
+         * <returns>Velocity to add. Return Vector3.zero for no contribution.</returns>
          */
         Vector3 GetVelocityInfluence(MotionContext context);
 
         /**
          * <summary>
          * Called when the ability transitions from active to inactive.
-         * Use to clean up flags, remove temporary modifiers, or restore state.
          * </summary>
          *
          * <param name="context">Current motion state.</param>

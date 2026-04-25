@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DynamicPhysics.Motor
+namespace DynamicPhysics
 {
     /**
      * <summary>

@@ -1,6 +1,5 @@
-using DynamicPhysics.Core;
 
-namespace DynamicPhysics.Constraints
+namespace DynamicPhysics
 {
     /**
      * <summary>

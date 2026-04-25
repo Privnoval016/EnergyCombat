@@ -1,7 +1,7 @@
-using DynamicPhysics.Input;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace DynamicPhysics.Core
+namespace DynamicPhysics
 {
     /**
      * <summary>
@@ -13,21 +13,20 @@ namespace DynamicPhysics.Core
      * <remarks>
      * Allocated once by the orchestrator and reused every frame to avoid GC pressure.
      * Fields are public for direct access in performance-critical pipeline stages.
-     * The orchestrator snapshots current physics state into this context at the start
-     * of each tick, and the motor reads the final velocity at the end.
+     * Tags replace a hardcoded flags enum — any system can set arbitrary string tags.
      * </remarks>
      */
     public class MotionContext
     {
         #region Velocity State
 
-        /** <summary>Current velocity being accumulated through the pipeline. Starts as the Rigidbody's velocity.</summary> */
+        /** <summary>Current velocity being accumulated through the pipeline.</summary> */
         public Vector3 Velocity;
 
-        /** <summary>Target velocity computed from input steering. Stages may reference this to blend toward.</summary> */
+        /** <summary>Target velocity computed from input steering.</summary> */
         public Vector3 DesiredVelocity;
 
-        /** <summary>External forces accumulated this frame (knockback, explosions, wind). Integrated by ExternalForceStage.</summary> */
+        /** <summary>External forces accumulated this frame. Integrated by ExternalForceStage.</summary> */
         public Vector3 AccumulatedForce;
 
         #endregion
@@ -37,7 +36,7 @@ namespace DynamicPhysics.Core
         /** <summary>Character's world position at the start of this tick.</summary> */
         public Vector3 Position;
 
-        /** <summary>Reference to the character's transform. Used by abilities for raycasts and spatial queries.</summary> */
+        /** <summary>Reference to the character's transform. Used by abilities for raycasts.</summary> */
         public Transform CharacterTransform;
 
         #endregion
@@ -57,33 +56,54 @@ namespace DynamicPhysics.Core
 
         #region Physics Parameters
 
-        /** <summary>Multiplier applied to gravity this frame. Modified by modifiers and abilities (e.g., apex hang).</summary> */
+        /** <summary>Multiplier applied to gravity this frame. Modified by modifiers and abilities.</summary> */
         public float GravityScale;
 
         /** <summary>Cached Rigidbody mass for force-to-acceleration conversion.</summary> */
         public float Mass;
 
-        /** <summary>Fixed delta time for this tick. Cached to avoid repeated property access.</summary> */
+        /** <summary>Fixed delta time for this tick.</summary> */
         public float DeltaTime;
+
+        #endregion
+
+        #region Tags
+
+        private readonly HashSet<string> _tags = new(16);
+
+        /**
+         * <summary>Checks whether a tag is currently active.</summary>
+         * <param name="tag">The tag to check. Use <see cref="MotionTag"/> constants or custom strings.</param>
+         * <returns>True if the tag is present.</returns>
+         */
+        public bool HasTag(string tag) => _tags.Contains(tag);
+
+        /**
+         * <summary>Sets (adds) a tag on this context.</summary>
+         * <param name="tag">The tag to set.</param>
+         */
+        public void SetTag(string tag) => _tags.Add(tag);
+
+        /**
+         * <summary>Removes a tag from this context.</summary>
+         * <param name="tag">The tag to remove.</param>
+         */
+        public void RemoveTag(string tag) => _tags.Remove(tag);
+
+        /** <summary>Removes all tags.</summary> */
+        public void ClearTags() => _tags.Clear();
 
         #endregion
 
         #region Context State
 
-        /** <summary>Bitfield of active contextual flags (grounded, dashing, wall contact, etc.).</summary> */
-        public MotionFlags Flags;
-
         /** <summary>Per-frame input snapshot from the input provider.</summary> */
         public MotionInputData Input;
 
-        #endregion
-
-        #region Steering Overrides
-
         /**
          * <summary>
-         * Multiplier on steering responsiveness for this frame. Set by modifiers to reduce or increase control.
-         * Default is 1.0. Values below 1.0 reduce control (e.g., during attacks), above 1.0 increase it.
+         * Multiplier on steering responsiveness for this frame.
+         * Default is 1.0. Values below 1.0 reduce control.
          * </summary>
          */
         public float SteeringMultiplier;
@@ -106,7 +126,7 @@ namespace DynamicPhysics.Core
             GroundAngle = 0f;
             GravityScale = 1f;
             SteeringMultiplier = 1f;
-            Flags = MotionFlags.None;
+            _tags.Clear();
         }
     }
 }

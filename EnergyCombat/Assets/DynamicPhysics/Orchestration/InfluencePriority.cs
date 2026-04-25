@@ -1,4 +1,4 @@
-namespace DynamicPhysics.Orchestration
+namespace DynamicPhysics
 {
     /**
      * <summary>

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DynamicPhysics.Input
+namespace DynamicPhysics
 {
     /**
      * <summary>

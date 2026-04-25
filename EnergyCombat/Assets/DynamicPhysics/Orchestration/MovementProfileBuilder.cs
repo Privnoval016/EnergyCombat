@@ -1,9 +1,5 @@
-using DynamicPhysics.Abilities;
-using DynamicPhysics.Constraints;
-using DynamicPhysics.Pipeline.Modifiers;
-using DynamicPhysics.Profiles;
 
-namespace DynamicPhysics.Orchestration
+namespace DynamicPhysics
 {
     /**
      * <summary>

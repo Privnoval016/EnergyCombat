@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace DynamicPhysics.Profiles
+namespace DynamicPhysics
 {
     /**
      * <summary>

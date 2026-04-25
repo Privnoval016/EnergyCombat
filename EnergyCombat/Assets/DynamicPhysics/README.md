@@ -24,7 +24,7 @@ The system is split into four strictly separated layers:
 ```
 ┌─────────────────────────────────────────┐
 │  Layer 1: Gameplay API                  │
-│  RequestJump() / RequestDash() / etc.   │
+│  orchestrator.Request("Jump")           │
 ├─────────────────────────────────────────┤
 │  Layer 2: Orchestration                 │
 │  MotionOrchestrator → ProfileBuilder    │
@@ -39,11 +39,19 @@ The system is split into four strictly separated layers:
 └─────────────────────────────────────────┘
 ```
 
-**Key principle**: No subsystem directly sets final velocity. All systems contribute to a shared `MotionContext` additively or transformationally. The only class that touches `Rigidbody` is `PhysicsMotor`.
+**Key principles**:
+- No subsystem directly sets final velocity — all contribute additively via `MotionContext`.
+- Only `PhysicsMotor` touches `Rigidbody`.
+- The orchestrator has **zero ability-specific logic** — all request handling is routed through abilities.
+
+### Request Routing
+
+All gameplay interaction flows through a single `Request()` method. Requests are routed in two passes:
+
+1. **Intercept pass**: Active abilities receive each request via `TryConsumeRequest()`. If consumed, the request stops here. (e.g., WallRunAbility intercepts Jump → wall jump.)
+2. **Activation pass**: Unconsumed requests are passed to inactive abilities via `CanActivate()`.
 
 ### Pipeline Execution Order
-
-Each `FixedUpdate`, stages execute in this deterministic order:
 
 | Priority | Stage | Responsibility |
 |----------|-------|---------------|
@@ -60,37 +68,41 @@ Each `FixedUpdate`, stages execute in this deterministic order:
 
 ### MotionContext
 
-The shared mutable state object that flows through the entire pipeline. Contains velocity, position, flags, input, and physics parameters. Allocated once and reused every frame — zero GC pressure.
+The shared mutable state object that flows through the entire pipeline. Contains velocity, position, tags, input, and physics parameters. Allocated once and reused every frame.
 
-### MotionFlags
+### MotionTag (String-Based Tags)
 
-Bitfield flags for fast contextual queries:
+Extensible string-based tag system replacing a hardcoded flags enum. Any system can define custom tags:
+
 ```csharp
-if ((context.Flags & MotionFlags.Grounded) != 0) { /* on ground */ }
-if ((context.Flags & MotionFlags.Dashing) != 0) { /* mid-dash */ }
+// Built-in tags
+context.SetTag(MotionTag.Grounded);
+context.HasTag(MotionTag.Dashing);
+context.RemoveTag(MotionTag.Airborne);
+
+// Custom tags — no core code changes needed
+context.SetTag("Burning");
+context.SetTag("SpeedBoosted");
+if (context.HasTag("Frozen")) { /* ... */ }
 ```
 
-Available flags: `Grounded`, `Airborne`, `Sliding`, `WallContact`, `Swinging`, `Dashing`, `InCombat`, `Stunned`, `SlidingCrouch`, `WallRunning`.
+Built-in tags: `Grounded`, `Airborne`, `Sliding`, `WallContact`, `Swinging`, `Dashing`, `InCombat`, `Stunned`, `SlidingCrouch`, `WallRunning`.
+
+### MotionRequestType (String-Based Requests)
+
+```csharp
+// Built-in request types
+orchestrator.Request(MotionRequestType.Jump);
+orchestrator.Request(MotionRequestType.Dash, dashDirection);
+
+// Custom request types
+orchestrator.Request("DoubleJump");
+orchestrator.Request("GrappleShot");
+```
 
 ### MovementProfile (ScriptableObject)
 
-Data-only tuning presets — zero runtime state. Create them via `Assets > Create > DynamicPhysics > Movement Profile`.
-
-Parameters include:
-- **Steering**: max speed, acceleration, deceleration, turn rate, speed-dependent control
-- **Physics**: gravity scale, friction, air control
-
-### MovementProfileBuilder
-
-Fluent API for composing runtime configurations from profiles + code overrides:
-
-```csharp
-var config = orchestrator.CreateBuilder()
-    .FromProfile(airProfile)
-    .WithGravityScale(0.5f)
-    .WithModifier(new DragModifier(0.1f))
-    .Build();
-```
+Data-only tuning presets — zero runtime state. Create via `Assets > Create > DynamicPhysics > Movement Profile`.
 
 ---
 
@@ -98,18 +110,15 @@ var config = orchestrator.CreateBuilder()
 
 ### Step 1: Add Components
 
-1. Add a `Rigidbody` to your character GameObject (the orchestrator requires it).
+1. Add a `Rigidbody` to your character GameObject.
 2. Add the `MotionOrchestrator` component.
 3. Create a `MovementProfile` asset: `Assets > Create > DynamicPhysics > Movement Profile`.
-4. Assign the profile to the orchestrator's **Default Profile** field.
-5. Configure the **Ground Detector** settings (radius, distance, layers).
+4. Assign the profile and configure ground detection settings.
 
 ### Step 2: Implement Input Provider
 
-Create a class that implements `IMotionInputProvider`:
-
 ```csharp
-using DynamicPhysics.Input;
+using DynamicPhysics;
 using UnityEngine;
 
 public class MyInputProvider : MonoBehaviour, IMotionInputProvider
@@ -117,7 +126,6 @@ public class MyInputProvider : MonoBehaviour, IMotionInputProvider
     public MotionInputData GetInput()
     {
         var cam = Camera.main.transform;
-        
         return new MotionInputData
         {
             MoveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")),
@@ -132,8 +140,7 @@ public class MyInputProvider : MonoBehaviour, IMotionInputProvider
 ### Step 3: Wire It Up
 
 ```csharp
-using DynamicPhysics.Abilities;
-using DynamicPhysics.Orchestration;
+using DynamicPhysics;
 using UnityEngine;
 
 public class PlayerSetup : MonoBehaviour
@@ -143,141 +150,75 @@ public class PlayerSetup : MonoBehaviour
 
     private void Start()
     {
-        // Set input
         orchestrator.SetInputProvider(inputProvider);
 
-        // Register abilities
-        orchestrator.RegisterAbility(new JumpAbility(
-            jumpHeight: 2.5f,
-            coyoteTime: 0.12f,
-            jumpBufferTime: 0.1f
-        ));
-
-        orchestrator.RegisterAbility(new DashAbility(
-            dashSpeed: 25f,
-            dashDuration: 0.15f,
-            cooldown: 0.8f
-        ));
-
-        orchestrator.RegisterAbility(new WallRunAbility(
-            wallDetectionDistance: 0.7f,
-            maxDuration: 1.2f,
-            wallRunSpeed: 10f
-        ));
-
-        orchestrator.RegisterAbility(new SlideAbility(
-            speedBoostMultiplier: 1.3f,
-            slideFriction: 12f
-        ));
+        orchestrator.RegisterAbility(new JumpAbility(jumpHeight: 2.5f, coyoteTime: 0.12f));
+        orchestrator.RegisterAbility(new DashAbility(dashSpeed: 25f, cooldown: 0.8f));
+        orchestrator.RegisterAbility(new WallRunAbility(maxDuration: 1.2f));
+        orchestrator.RegisterAbility(new SlideAbility(speedBoostMultiplier: 1.3f));
     }
 
     private void Update()
     {
-        // Route discrete inputs to requests
-        if (Input.GetButtonDown("Jump")) orchestrator.RequestJump();
-        if (Input.GetButtonDown("Dash")) orchestrator.RequestDash();
-        if (Input.GetButtonDown("Slide")) orchestrator.RequestSlide();
+        // All requests go through the same generic API
+        if (Input.GetButtonDown("Jump")) orchestrator.Request(MotionRequestType.Jump);
+        if (Input.GetButtonDown("Dash")) orchestrator.Request(MotionRequestType.Dash);
+        if (Input.GetButtonDown("Slide")) orchestrator.Request(MotionRequestType.Slide);
     }
 }
-```
-
-### Step 4: Tune via Profiles
-
-Create multiple `MovementProfile` assets for different movement modes:
-- **Ground Profile**: High acceleration, high friction, full control
-- **Air Profile**: Lower acceleration, low friction, reduced air control
-- **Combat Profile**: Reduced max speed, high deceleration
-
-Switch profiles at runtime:
-```csharp
-orchestrator.SetProfile(combatProfile);
 ```
 
 ---
 
 ## API Reference
 
-### MotionOrchestrator — Public API
+### MotionOrchestrator
 
-#### Requests (Discrete Actions)
+#### Generic Request API
 | Method | Description |
 |--------|-------------|
-| `RequestJump()` | Queues a jump request (supports buffering + coyote time) |
-| `RequestDash(Vector3 dir)` | Queues a directional dash |
-| `RequestSlide()` | Queues a ground slide |
-| `AttachRope(RopeEffector)` | Attaches to a rope anchor for swinging |
-| `DetachRope()` | Detaches from the current rope |
+| `Request(MotionRequest)` | Queues any request — routed through abilities automatically |
+| `Request(string type)` | Convenience: queues a request by type string |
+| `Request(string type, Vector3 dir)` | Convenience: queues a directional request |
 
 #### Forces
 | Method | Description |
 |--------|-------------|
-| `AddForce(Vector3)` | Adds an external force (integrated as F*dt/m) |
-| `AddImpulse(Vector3)` | Adds immediate velocity (bypasses force integration) |
+| `AddForce(Vector3)` | External force (integrated as F*dt/m) |
+| `AddImpulse(Vector3)` | Immediate velocity addition |
 
 #### Configuration
 | Method | Description |
 |--------|-------------|
-| `SetInputProvider(IMotionInputProvider)` | Sets the continuous input source |
+| `SetInputProvider(IMotionInputProvider)` | Sets continuous input source |
 | `SetProfile(MovementProfile)` | Switches movement profile |
 | `RegisterAbility(IMotionAbility)` | Adds a persistent ability |
 | `UnregisterAbility<T>()` | Removes an ability by type |
 | `AddModifier(IMotionModifier)` | Adds a persistent modifier |
 | `AddTemporalModifier(IMotionModifier, float)` | Adds a time-limited modifier |
 | `AddConstraint(IMotionConstraint)` | Adds a persistent constraint |
-| `CreateBuilder()` | Creates a fluent runtime config builder |
-
-#### Read-Only State
-| Property | Description |
-|----------|-------------|
-| `IsGrounded` | Whether the character is on a walkable surface |
-| `Velocity` | Current velocity vector |
-| `Context` | Full motion context (for debugging) |
 
 ---
 
 ## Abilities
 
-### JumpAbility
+### IMotionAbility Interface
 
-Full-featured jump with input-timing systems:
+Every ability implements three key methods:
 
-- **Coyote time**: Jump remains valid briefly after leaving ground edge
-- **Jump buffering**: Jump pressed before landing fires on contact
-- **Variable height**: Release early for short hops, hold for full height
-- **Apex hang**: Reduced gravity at jump peak for floaty feel
+| Method | Called On | Purpose |
+|--------|-----------|---------|
+| `TryConsumeRequest()` | Active abilities | Intercept requests (e.g., wall run intercepts Jump → wall jump) |
+| `CanActivate()` | Inactive abilities | Check if unconsumed requests + conditions warrant activation |
+| `GetVelocityInfluence()` | Active abilities | Return additive velocity contribution |
 
-Jump velocity is derived from desired height using kinematics: `v₀ = √(2gh)`
+### Built-In Abilities
 
-### DashAbility
-
-Directional burst with cooldown:
-- Overrides velocity in dash direction for a short duration
-- Heavily reduces gravity during dash
-- Suppresses steering input via `MotionFlags.Dashing`
-
-### WallRunAbility
-
-Auto-activating wall run when airborne near walls:
-- Detects walls via left/right raycasts relative to velocity direction
-- Reduces gravity, projects movement along wall surface
-- Grip decays over time (gradual downward pull)
-- Supports wall jumping with configurable up/out forces
-
-### SlideAbility
-
-Ground slide with momentum:
-- Speed boost on entry, friction-based deceleration
-- Height reduction via callback delegate (decoupled from collider type)
-- Suppresses steering for committed slide direction
-
-### RopeSwingAbility + RopeEffector
-
-Pendulum swing system:
-- `RopeEffector`: Place on world objects as anchor points (configurable length, offset)
-- `RopeSwingAbility`: Manages attachment/detachment lifecycle
-- `RopeConstraint`: Enforces pendulum distance, removes outward velocity component
-- Input adds tangential force for swing steering
-- Optional rope length adjustment (reel in/out)
+- **JumpAbility**: Coyote time, buffering, variable height, apex hang. `v₀ = √(2gh)`.
+- **DashAbility**: Directional burst with cooldown. Reduced gravity.
+- **WallRunAbility**: Auto-activating. **Intercepts Jump requests** for wall jumps.
+- **SlideAbility**: Speed boost, friction deceleration, height change callback.
+- **RopeSwingAbility**: Pendulum swing. **Intercepts Jump and RopeDetach requests**.
 
 ---
 
@@ -285,27 +226,11 @@ Pendulum swing system:
 
 | Modifier | Description |
 |----------|-------------|
-| `GravityScaleModifier` | Multiplies gravity (apex hang, fast-fall) |
+| `GravityScaleModifier` | Multiplies gravity |
 | `SpeedCapModifier` | Clamps horizontal speed |
-| `DragModifier` | Exponential velocity decay (air resistance) |
-| `SteeringOverrideModifier` | Adjusts input responsiveness (reduce during attacks) |
+| `DragModifier` | Exponential velocity decay |
+| `SteeringOverrideModifier` | Adjusts input responsiveness |
 | `TemporalModifier` | Wraps any modifier with auto-expiring duration |
-
-### Temporal Modifiers Example
-
-```csharp
-// Reduce control for 0.5 seconds during a hit reaction
-orchestrator.AddTemporalModifier(
-    new SteeringOverrideModifier(0.2f),
-    duration: 0.5f
-);
-
-// Slow the character for 2 seconds
-orchestrator.AddTemporalModifier(
-    new SpeedCapModifier(5f),
-    duration: 2f
-);
-```
 
 ---
 
@@ -317,8 +242,6 @@ orchestrator.AddTemporalModifier(
 | `RopeConstraint` | Enforces pendulum distance from anchor |
 | `SpeedLimitConstraint` | Hard cap on total velocity magnitude |
 
-Constraints always run last and may destructively correct velocity to maintain physical invariants.
-
 ---
 
 ## Examples
@@ -326,160 +249,106 @@ Constraints always run last and may destructively correct velocity to maintain p
 ### Knockback
 
 ```csharp
-// Apply a knockback force from an explosion
-Vector3 knockbackDir = (player.transform.position - explosionCenter).normalized;
 orchestrator.AddForce(knockbackDir * 500f);
-
-// Temporarily reduce player control during knockback
-orchestrator.AddTemporalModifier(
-    new SteeringOverrideModifier(0.1f),
-    duration: 0.3f
-);
+orchestrator.AddTemporalModifier(new SteeringOverrideModifier(0.1f), duration: 0.3f);
 ```
 
 ### Grapple Swing
 
 ```csharp
-// Attach to a rope effector when player activates grapple
-public void OnGrappleActivated(RopeEffector target)
-{
-    orchestrator.AttachRope(target);
-}
+// Attach — request routes to RopeSwingAbility via CanActivate
+orchestrator.Request(new MotionRequest(MotionRequestType.RopeAttach) { Target = ropeEffector });
 
-// Detach and launch
-public void OnGrappleReleased()
-{
-    orchestrator.DetachRope();
-    // Player launches with current swing velocity — momentum preserved automatically
-}
+// Detach — RopeSwingAbility intercepts this via TryConsumeRequest
+orchestrator.Request(MotionRequestType.RopeDetach);
 ```
 
-### Dynamic Profile Switching
+### Wall Jump (Automatic)
 
 ```csharp
-// Switch to combat profile when entering combat
-public void OnCombatEntered()
-{
-    orchestrator.SetProfile(combatProfile);
-    orchestrator.AddModifier(new SpeedCapModifier(8f));
-}
-
-public void OnCombatExited()
-{
-    orchestrator.SetProfile(defaultProfile);
-    orchestrator.RemoveModifier(combatSpeedCap);
-}
+// Player presses jump while wall running:
+orchestrator.Request(MotionRequestType.Jump);
+// WallRunAbility (active) intercepts → performs wall jump
+// If NOT wall running, JumpAbility (inactive) activates → normal jump
 ```
 
-### Slide with Collider Adjustment
+### Custom Ability with Custom Request
 
 ```csharp
-var slideAbility = new SlideAbility(speedBoostMultiplier: 1.3f);
-slideAbility.OnHeightChange = (multiplier) =>
+public class TeleportAbility : IMotionAbility
 {
-    // Adjust capsule collider height
-    capsuleCollider.height = originalHeight * multiplier;
-    capsuleCollider.center = Vector3.up * (originalHeight * multiplier * 0.5f);
-};
-orchestrator.RegisterAbility(slideAbility);
+    public const string TeleportRequest = "Teleport";
+
+    public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
+
+    public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+    {
+        for (int i = 0; i < requestCount; i++)
+            if (requests[i].Type == TeleportRequest) return true;
+        return false;
+    }
+
+    // ... rest of implementation
+}
+
+// Usage:
+orchestrator.Request("Teleport");
 ```
 
 ---
 
 ## Performance
 
-The system is designed for near-zero runtime overhead:
-
-- **Zero GC in the hot path**: `MotionContext` and `RuntimeMotionConfig` are allocated once and reused. Request buffer is a fixed-size array. No LINQ or lambda allocations in pipeline execution.
-- **Cache-friendly iteration**: Pipeline stages are sorted once into a flat array and iterated linearly. Modifiers and constraints use `List<T>` with pre-allocated capacity.
-- **Minimal math**: Uses `sqrMagnitude` instead of `magnitude` where possible. Avoids unnecessary `Vector3.Normalize()` calls. Caches `Physics.gravity` at construction.
-- **Constant-time flag checks**: `MotionFlags` is a `[Flags]` enum using bitwise operations — no string comparisons or dictionary lookups.
-- **No virtual call overhead on data**: All data containers are concrete classes/structs. Interface dispatch is limited to the stage/modifier/constraint/ability iteration (typically 6-10 calls per frame).
+- **Zero GC in hot path**: MotionContext allocated once, fixed-size request buffers
+- **Cache-friendly execution**: Stages sorted once into flat array
+- **Tag lookups**: HashSet<string> with O(1) average-case Contains
+- **No LINQ** in any runtime code path
+- **sqrMagnitude** over `magnitude` where possible
 
 ---
 
 ## Extending the System
 
-### Custom Ability
+### Custom Tags
 
 ```csharp
-using DynamicPhysics.Abilities;
-using DynamicPhysics.Core;
-using UnityEngine;
-
-public class GlideAbility : IMotionAbility
+// Define anywhere — no registration needed
+public static class MyTags
 {
-    public bool IsActive { get; private set; }
-
-    public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
-    {
-        // Activate when airborne and falling
-        return (context.Flags & MotionFlags.Airborne) != 0 
-            && context.Velocity.y < -1f 
-            && context.Input.JumpHeld;
-    }
-
-    public void Activate(MotionContext context)
-    {
-        IsActive = true;
-    }
-
-    public void Tick(MotionContext context, float deltaTime)
-    {
-        // Heavily reduce gravity for gliding
-        context.GravityScale *= 0.15f;
-
-        // Deactivate when landing or releasing
-        if ((context.Flags & MotionFlags.Grounded) != 0 || !context.Input.JumpHeld)
-            Deactivate(context);
-    }
-
-    public Vector3 GetVelocityInfluence(MotionContext context) => Vector3.zero;
-
-    public void Deactivate(MotionContext context)
-    {
-        IsActive = false;
-    }
+    public const string Burning = "Burning";
+    public const string SpeedBoosted = "SpeedBoosted";
 }
+
+// Use in abilities, modifiers, or gameplay code
+context.SetTag(MyTags.Burning);
+if (context.HasTag(MyTags.SpeedBoosted)) { /* ... */ }
 ```
 
-### Custom Modifier
+### Custom Request Types
 
 ```csharp
-using DynamicPhysics.Core;
-using DynamicPhysics.Pipeline.Modifiers;
-using UnityEngine;
-
-public class WindModifier : IMotionModifier
+public static class MyRequests
 {
-    public int Order => 60;
-    public Vector3 WindDirection;
-    public float WindStrength;
-
-    public void Apply(MotionContext context)
-    {
-        context.Velocity += WindDirection * (WindStrength * context.DeltaTime);
-    }
+    public const string DoubleJump = "DoubleJump";
+    public const string GroundPound = "GroundPound";
 }
+
+orchestrator.Request(MyRequests.GroundPound);
 ```
 
 ### Custom Pipeline Stage
 
 ```csharp
-using DynamicPhysics.Core;
-using DynamicPhysics.Orchestration;
-using DynamicPhysics.Pipeline;
-
 public class MagnetismStage : IMotionStage
 {
-    public int Priority => 250; // After abilities, before forces
-    public Transform MagnetTarget;
+    public int Priority => 250;
+    public Transform Target;
     public float PullStrength;
 
     public void Execute(MotionContext context, RuntimeMotionConfig config)
     {
-        if (MagnetTarget == null) return;
-        Vector3 toTarget = MagnetTarget.position - context.Position;
+        if (Target == null) return;
+        Vector3 toTarget = Target.position - context.Position;
         context.Velocity += toTarget.normalized * (PullStrength * context.DeltaTime);
     }
 }
@@ -490,68 +359,27 @@ public class MagnetismStage : IMotionStage
 ## Directory Structure
 
 ```
-DynamicPhysics/
+DynamicPhysics/                       (all files use namespace DynamicPhysics)
 ├── README.md
 ├── Core/
-│   ├── MotionContext.cs          — Shared mutable pipeline state
-│   ├── MotionFlags.cs            — Bitfield contextual flags
-│   └── MotionRequest.cs          — Discrete gameplay intents
+│   ├── MotionContext.cs              — Shared mutable pipeline state (HashSet tags)
+│   ├── MotionFlags.cs                — MotionTag string constants
+│   └── MotionRequest.cs              — Requests + MotionRequestType string constants
 ├── Pipeline/
-│   ├── IMotionStage.cs           — Stage interface
-│   ├── MotionPipeline.cs         — Ordered stage executor
-│   ├── Stages/
-│   │   ├── InputSteeringStage.cs — Momentum-based steering
-│   │   ├── GravityStage.cs       — Scaled gravity
-│   │   ├── AbilityInfluenceStage.cs
-│   │   ├── ExternalForceStage.cs — Force integration
-│   │   ├── ModifierStage.cs      — Modifier application
-│   │   └── ConstraintStage.cs    — Constraint enforcement
-│   └── Modifiers/
-│       ├── IMotionModifier.cs    — Modifier interface
-│       ├── GravityScaleModifier.cs
-│       ├── SpeedCapModifier.cs
-│       ├── DragModifier.cs
-│       ├── SteeringOverrideModifier.cs
-│       └── TemporalModifier.cs   — Time-limited wrapper
-├── Constraints/
-│   ├── IMotionConstraint.cs      — Constraint interface
-│   ├── GroundSnapConstraint.cs   — Slope adherence
-│   ├── RopeConstraint.cs         — Pendulum distance
-│   └── SpeedLimitConstraint.cs   — Hard speed cap
-├── Profiles/
-│   ├── MovementProfile.cs        — ScriptableObject tuning data
-│   └── SteeringSettings.cs       — Steering configuration
-├── Orchestration/
-│   ├── MotionOrchestrator.cs     — Hub MonoBehaviour
-│   ├── MovementProfileBuilder.cs — Fluent config builder
-│   ├── RuntimeMotionConfig.cs    — Resolved per-frame config
-│   └── InfluencePriority.cs      — Priority constants
-├── Motor/
-│   ├── PhysicsMotor.cs           — Sole Rigidbody accessor
-│   └── GroundDetector.cs         — Spherecast ground sensing
-├── Input/
-│   ├── IMotionInputProvider.cs   — Input abstraction
-│   └── MotionInputData.cs        — Per-frame input snapshot
-└── Abilities/
-    ├── IMotionAbility.cs         — Ability interface
-    ├── JumpAbility.cs            — Jump with coyote/buffer/variable/apex
-    ├── DashAbility.cs            — Directional burst
-    ├── WallRunAbility.cs         — Auto-activating wall run
-    ├── SlideAbility.cs           — Ground slide with momentum
-    ├── RopeSwingAbility.cs       — Pendulum swing management
-    └── RopeEffector.cs           — World anchor component
+│   ├── IMotionStage.cs
+│   ├── MotionPipeline.cs
+│   ├── Stages/                       — 6 concrete pipeline stages
+│   └── Modifiers/                    — IMotionModifier + 5 concrete modifiers
+├── Constraints/                      — IMotionConstraint + 3 concrete constraints
+├── Profiles/                         — MovementProfile (SO) + SteeringSettings
+├── Orchestration/                    — MotionOrchestrator, Builder, Config, Priority
+├── Motor/                            — PhysicsMotor + GroundDetector
+├── Input/                            — IMotionInputProvider + MotionInputData
+└── Abilities/                        — IMotionAbility + 5 abilities + RopeEffector
 ```
 
 ---
 
 ## Portability
 
-This system is fully contained within the `DynamicPhysics` namespace and depends only on `UnityEngine`. To move it to another project:
-
-1. Copy the entire `DynamicPhysics/` folder into the target project's `Assets/`.
-2. All references will resolve automatically — no external dependencies.
-
-If you later want compilation isolation, add an Assembly Definition (`.asmdef`) at the root with:
-- **Name**: `DynamicPhysics`
-- **Root Namespace**: `DynamicPhysics`
-- **References**: None (only auto-referenced Unity assemblies)
+This system depends only on `UnityEngine` and lives in a single flat `DynamicPhysics` namespace. To move to another project, copy the entire folder. To add compilation isolation later, create a single `.asmdef` at the root.

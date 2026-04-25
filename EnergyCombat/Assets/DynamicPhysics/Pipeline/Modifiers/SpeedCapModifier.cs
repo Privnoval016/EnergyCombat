@@ -1,7 +1,6 @@
-using DynamicPhysics.Core;
 using UnityEngine;
 
-namespace DynamicPhysics.Pipeline.Modifiers
+namespace DynamicPhysics
 {
     /**
      * <summary>
