@@ -108,7 +108,6 @@ namespace Systems.Input
 
         public void OnCrouch(InputAction.CallbackContext context)
         {
-            EmitButtonEvent(PlayerInputButton.Crouch, context.phase);
         }
 
         public void OnSprint(InputAction.CallbackContext context)

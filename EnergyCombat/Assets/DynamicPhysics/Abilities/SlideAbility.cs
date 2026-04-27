@@ -44,10 +44,6 @@ namespace DynamicPhysics
             if (!context.HasTag(MotionTag.Grounded)) return false;
             if (context.HasTag(MotionTag.Dashing) || context.HasTag(MotionTag.WallRunning) || context.HasTag(MotionTag.Swinging)) return false;
 
-            Vector3 hVel = context.Velocity;
-            hVel.y = 0f;
-            if (hVel.sqrMagnitude < Settings.SlideMinEntrySpeed * Settings.SlideMinEntrySpeed) return false;
-
             for (int i = 0; i < requests.Count; i++)
             {
                 if (requests[i].Type == MotionRequestType.Slide)

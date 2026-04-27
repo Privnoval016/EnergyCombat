@@ -7,7 +7,6 @@ namespace Systems.Input
         Jump,
         Dodge,
         Sprint,
-        Crouch,
         LightAttack,
         HeavyAttack
     }

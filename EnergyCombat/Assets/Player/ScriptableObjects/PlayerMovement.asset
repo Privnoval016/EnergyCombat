@@ -19,6 +19,7 @@ MonoBehaviour:
     MaxTurnRate: 720
     HighSpeedControl: 0.35
     LowSpeedControl: 1
-  GravityScale: 1
-  Friction: 8
-  AirControl: 0.4
+  GravityScale: 8
+  Friction: 38.6
+  AirControl: 0.103
+  SnapForce: 5

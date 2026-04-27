@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6865577600866931156
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2937277190955913025}
+  m_Layer: 6
+  m_Name: LookTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2937277190955913025
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6865577600866931156}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4404674286758560352}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8018543644747926841
 GameObject:
   m_ObjectHideFlags: 0
@@ -14,6 +45,7 @@ GameObject:
   - component: {fileID: 5754561872873381000}
   - component: {fileID: 4813496900732552107}
   - component: {fileID: 3645171175461346969}
+  - component: {fileID: 5295536920856279963}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -33,7 +65,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2937277190955913025}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1596882424489787555
@@ -155,12 +188,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28d7c4d7cd57a4ad1964743a5f8fa4fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DynamicPhysics.MotionOrchestrator
-  defaultProfile: {fileID: 0}
+  defaultProfile: {fileID: 11400000, guid: b9fedbaa513584b16ac15ee19105b76d, type: 2}
   groundDetector:
-    Radius: 0.3
-    Distance: 0.3
-    OriginOffset: 0.1
-    GroundLayers:
+    characterHalfHeight: 1
+    radius: 0.3
+    distance: 0.3
+    originOffset: 0.1
+    groundLayers:
       serializedVersion: 2
       m_Bits: 8
-    MaxSlopeAngle: 45
+    maxSlopeAngle: 45
+--- !u!114 &5295536920856279963
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018543644747926841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756f599cc9064810a104460c11e27a5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
+  motionOrchestrator: {fileID: 3645171175461346969}
+  movementOrientation: {fileID: 0}
+  locomotionConfig: {fileID: 11400000, guid: 2f15e492d2eaf43dcad1d75f573985ca, type: 2}

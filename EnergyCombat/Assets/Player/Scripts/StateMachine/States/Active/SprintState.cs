@@ -21,9 +21,11 @@ public class SprintState : State<PlayerController>
 
     protected override void OnUpdate(float deltaTime)
     {
-        if (!Host.IsFullThrottleMove)
-        {
-            Host.CancelSprintToggle();
-        }
+        
+    }
+
+    protected override void OnExit()
+    {
+        Host.CancelSprintToggle();
     }
 }
