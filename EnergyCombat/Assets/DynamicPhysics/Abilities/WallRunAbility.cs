@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -68,7 +69,7 @@ namespace DynamicPhysics
             return false;
         }
 
-        public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+        public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             if (!context.HasTag(MotionTag.Airborne)) return false;
 

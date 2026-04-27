@@ -17,25 +17,29 @@ namespace DynamicPhysics
     [System.Serializable]
     public class GroundDetector
     {
+        /** <summary>Half the height of the character. Used to position the detection spherecast.</summary> */
+        [Tooltip("Half the height of the character.")]
+        public float characterHalfHeight = 1f; 
+        
         /** <summary>Radius of the detection sphere. Should roughly match the character's collider radius.</summary> */
         [Tooltip("Radius of the ground detection sphere.")]
-        public float Radius = 0.3f;
+        public float radius = 0.3f;
 
         /** <summary>Maximum distance below the character to check for ground.</summary> */
         [Tooltip("How far below the character to check for ground.")]
-        public float Distance = 0.3f;
+        public float distance = 0.3f;
 
         /** <summary>Vertical offset above the character's base to start the spherecast from.</summary> */
         [Tooltip("Offset above character base to start the cast.")]
-        public float OriginOffset = 0.1f;
+        public float originOffset = 0.1f;
 
         /** <summary>Layer mask for ground surfaces.</summary> */
         [Tooltip("Layers considered as ground.")]
-        public LayerMask GroundLayers = ~0;
+        public LayerMask groundLayers = ~0;
 
         /** <summary>Maximum angle (degrees) of a surface that is considered walkable.</summary> */
         [Tooltip("Max walkable slope angle in degrees.")]
-        public float MaxSlopeAngle = 45f;
+        public float maxSlopeAngle = 45f;
 
         #region Cached Results
 
@@ -59,18 +63,18 @@ namespace DynamicPhysics
          * Updates all cached result properties.
          * </summary>
          *
-         * <param name="position">World-space position of the character's base (feet).</param>
+         * <param name="position">World-space position of the character's center.</param>
          */
         public void Detect(Vector3 position)
         {
-            Vector3 origin = position + Vector3.up * (Radius + OriginOffset);
+            Vector3 origin = position + Vector3.up * (radius + originOffset - characterHalfHeight);
 
-            if (Physics.SphereCast(origin, Radius, Vector3.down, out RaycastHit hit, Distance + OriginOffset, GroundLayers, QueryTriggerInteraction.Ignore))
+            if (Physics.SphereCast(origin, radius, Vector3.down, out RaycastHit hit, distance + originOffset, groundLayers, QueryTriggerInteraction.Ignore))
             {
                 GroundAngle = Vector3.Angle(hit.normal, Vector3.up);
                 GroundNormal = hit.normal;
                 GroundPoint = hit.point;
-                IsGrounded = GroundAngle <= MaxSlopeAngle;
+                IsGrounded = GroundAngle <= maxSlopeAngle;
             }
             else
             {

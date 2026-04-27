@@ -31,11 +31,11 @@ namespace DynamicPhysics
 
         /** <summary>Default movement profile loaded on initialization.</summary> */
         [Header("Profile")]
-        [SerializeField] private MovementProfile _defaultProfile;
+        [SerializeField] private MovementProfile defaultProfile;
 
         /** <summary>Ground detection configuration.</summary> */
         [Header("Ground Detection")]
-        [SerializeField] private GroundDetector _groundDetector = new();
+        [SerializeField] private GroundDetector groundDetector = new();
 
         #endregion
 
@@ -48,17 +48,13 @@ namespace DynamicPhysics
         private RuntimeMotionConfig _config;
         private MovementProfile _activeProfile;
 
-        private readonly List<IMotionAbility> _abilities = new(8);
-        private readonly List<IMotionModifier> _modifiers = new(16);
-        private readonly List<IMotionConstraint> _constraints = new(8);
+        private readonly List<IMotionAbility> _abilities = new();
+        private readonly List<IMotionModifier> _modifiers = new();
+        private readonly List<IMotionConstraint> _constraints = new();
 
-        // Request buffer (fixed-size array to avoid allocations)
-        private readonly MotionRequest[] _requestBuffer = new MotionRequest[16];
-        private int _requestCount;
+        private readonly List<MotionRequest> _requestBuffer = new();
 
-        // Unconsumed request buffer (after intercept pass)
-        private readonly MotionRequest[] _unconsumedBuffer = new MotionRequest[16];
-        private int _unconsumedCount;
+        private readonly List<MotionRequest> _unconsumedBuffer = new();
 
         private IMotionInputProvider _inputProvider;
 
@@ -72,11 +68,20 @@ namespace DynamicPhysics
         /** <summary>Whether the character is currently grounded.</summary> */
         public bool IsGrounded => _context.HasTag(MotionTag.Grounded);
 
+        /** <summary>Whether the character is currently dashing.</summary> */
+        public bool IsDashing => _context.HasTag(MotionTag.Dashing);
+
+        /** <summary>Whether the character is currently in a sliding crouch state.</summary> */
+        public bool IsSlidingCrouch => _context.HasTag(MotionTag.SlidingCrouch);
+
         /** <summary>Current velocity of the character.</summary> */
         public Vector3 Velocity => _context.Velocity;
 
         /** <summary>The currently active movement profile.</summary> */
         public MovementProfile ActiveProfile => _activeProfile;
+
+        /** <summary>Checks whether a motion tag is currently active.</summary> */
+        public bool HasTag(string motionTag) => _context.HasTag(motionTag);
 
         #endregion
 
@@ -99,13 +104,8 @@ namespace DynamicPhysics
             _pipeline.AddStage(new GravityStage());
             _pipeline.AddStage(new ModifierStage());
             _pipeline.AddStage(new ConstraintStage());
-
-            if (_defaultProfile != null)
-            {
-                _activeProfile = _defaultProfile;
-            }
-
-            _constraints.Add(new GroundSnapConstraint());
+            
+            _constraints.Add(new GroundSnapConstraint(defaultProfile.SnapForce));
         }
 
         private void FixedUpdate()
@@ -117,12 +117,12 @@ namespace DynamicPhysics
             _context.DeltaTime = dt;
 
             // 2. Ground detection
-            _groundDetector.Detect(_context.Position);
-            _context.GroundNormal = _groundDetector.GroundNormal;
-            _context.GroundPoint = _groundDetector.GroundPoint;
-            _context.GroundAngle = _groundDetector.GroundAngle;
+            groundDetector.Detect(_context.Position);
+            _context.GroundNormal = groundDetector.GroundNormal;
+            _context.GroundPoint = groundDetector.GroundPoint;
+            _context.GroundAngle = groundDetector.GroundAngle;
 
-            if (_groundDetector.IsGrounded)
+            if (groundDetector.IsGrounded)
             {
                 _context.SetTag(MotionTag.Grounded);
                 _context.RemoveTag(MotionTag.Airborne);
@@ -155,8 +155,9 @@ namespace DynamicPhysics
             // 8. Apply to rigidbody
             _motor.ApplyVelocity(_context);
 
-            // 9. Clear requests
-            _requestCount = 0;
+            // 9. Clear request buffers
+            _requestBuffer.Clear();
+            _unconsumedBuffer.Clear();
 
             // 10. Cleanup expired temporal modifiers
             CleanupExpiredModifiers();
@@ -176,10 +177,7 @@ namespace DynamicPhysics
          */
         public void Request(MotionRequest request)
         {
-            if (_requestCount < _requestBuffer.Length)
-            {
-                _requestBuffer[_requestCount++] = request;
-            }
+            _requestBuffer.Add(request);
         }
 
         /**
@@ -308,9 +306,7 @@ namespace DynamicPhysics
          */
         private void RouteRequestsAndTickAbilities()
         {
-            // Pass 1: Let active abilities intercept requests
-            _unconsumedCount = 0;
-            for (int r = 0; r < _requestCount; r++)
+            for (int r = 0; r < _requestBuffer.Count; r++)
             {
                 bool consumed = false;
                 for (int a = 0; a < _abilities.Count; a++)
@@ -322,9 +318,9 @@ namespace DynamicPhysics
                     }
                 }
 
-                if (!consumed && _unconsumedCount < _unconsumedBuffer.Length)
+                if (!consumed)
                 {
-                    _unconsumedBuffer[_unconsumedCount++] = _requestBuffer[r];
+                    _unconsumedBuffer.Add(_requestBuffer[r]);
                 }
             }
 
@@ -339,7 +335,7 @@ namespace DynamicPhysics
                 }
                 else
                 {
-                    if (ability.CanActivate(_context, _unconsumedBuffer, _unconsumedCount))
+                    if (ability.CanActivate(_context, _unconsumedBuffer))
                     {
                         ability.Activate(_context);
                     }

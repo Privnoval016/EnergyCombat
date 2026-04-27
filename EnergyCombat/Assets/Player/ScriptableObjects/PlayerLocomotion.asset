@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf9be25aa97ec4088b920c1bf177f756, type: 3}
+  m_Name: PlayerLocomotion
+  m_EditorClassIdentifier: Assembly-CSharp::Player.Config.PlayerLocomotionConfig
+  MovementProfile: {fileID: 11400000, guid: b9fedbaa513584b16ac15ee19105b76d, type: 2}
+  InputThresholds:
+    MoveInputThreshold: 0.15
+    FullThrottleThreshold: 0.95
+  Jump:
+    JumpHeight: 12.43
+    CoyoteTime: 0.12
+    JumpBuffer: 0.1
+    JumpCutMultiplier: 0.5
+  Dash:
+    DashSpeed: 25
+    DashDuration: 0.15
+    DashCooldown: 0.8
+    DashGravityScale: 0.1
+  Slide:
+    SlideBoostMultiplier: 1.3
+    SlideFriction: 12
+    SlideMinSpeed: 2
+    SlideMaxDuration: 1.5
+    SlideMinEntrySpeed: 5
+    SlideHeightMultiplier: 0.5

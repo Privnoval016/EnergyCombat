@@ -48,6 +48,10 @@ namespace DynamicPhysics
         [Range(0f, 1f)]
         public float AirControl = 0.4f;
 
+        /** <summary>Force applied to maintain ground contact and prevent floating.</summary> */
+        [Tooltip("Snap force to maintain ground contact. Should be at least gravity magnitude (9.8).")]
+        public float SnapForce = 20f;
+
         #endregion
     }
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Player.Config;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -12,10 +14,7 @@ namespace DynamicPhysics
     {
         #region Configuration
 
-        public float DashSpeed { get; set; }
-        public float DashDuration { get; set; }
-        public float Cooldown { get; set; }
-        public float DashGravityScale { get; set; }
+        public DashSettings Settings;
 
         #endregion
 
@@ -28,18 +27,14 @@ namespace DynamicPhysics
 
         #endregion
 
-        public DashAbility(float dashSpeed = 25f, float dashDuration = 0.15f,
-            float cooldown = 0.8f, float dashGravityScale = 0.1f)
+        public DashAbility(DashSettings settings)
         {
-            DashSpeed = dashSpeed;
-            DashDuration = dashDuration;
-            Cooldown = cooldown;
-            DashGravityScale = dashGravityScale;
+            Settings = settings;
         }
 
         public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
 
-        public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+        public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             if (_cooldownTimer > 0f)
             {
@@ -47,7 +42,7 @@ namespace DynamicPhysics
                 return false;
             }
 
-            for (int i = 0; i < requestCount; i++)
+            for (int i = 0; i < requests.Count; i++)
             {
                 if (requests[i].Type == MotionRequestType.Dash)
                 {
@@ -75,9 +70,9 @@ namespace DynamicPhysics
         public void Activate(MotionContext context)
         {
             IsActive = true;
-            _dashTimer = DashDuration;
+            _dashTimer = Settings.DashDuration;
 
-            Vector3 vel = _dashDirection * DashSpeed;
+            Vector3 vel = _dashDirection * Settings.DashSpeed;
             vel.y = 0f;
             context.Velocity = vel;
             context.SetTag(MotionTag.Dashing);
@@ -86,10 +81,10 @@ namespace DynamicPhysics
         public void Tick(MotionContext context, float deltaTime)
         {
             _dashTimer -= deltaTime;
-            context.GravityScale *= DashGravityScale;
+            context.GravityScale *= Settings.DashGravityScale;
 
-            context.Velocity.x = _dashDirection.x * DashSpeed;
-            context.Velocity.z = _dashDirection.z * DashSpeed;
+            context.Velocity.x = _dashDirection.x * Settings.DashSpeed;
+            context.Velocity.z = _dashDirection.z * Settings.DashSpeed;
 
             if (_dashTimer <= 0f) Deactivate(context);
         }
@@ -99,7 +94,7 @@ namespace DynamicPhysics
         public void Deactivate(MotionContext context)
         {
             IsActive = false;
-            _cooldownTimer = Cooldown;
+            _cooldownTimer = Settings.DashCooldown;
             context.RemoveTag(MotionTag.Dashing);
         }
     }

@@ -16,10 +16,30 @@ public static class PlayerStateConstructor
 
     private static void BuildActiveStates(StateMachineBuilder<PlayerController> builder, State<PlayerController> root)
     {
-        var active = new ActiveState().WithParent(root);
-
-        var idle = new IdleState().AsInitialState(active);
+        var active = new ActiveState().WithParent(root).AsInitialState(root);
         
-        builder.WithState(active).WithState(idle);
+        var grounded = new GroundedState().AsInitialState(active);
+        var airborne = new AirborneState().WithParent(active);
+        var dodge = new DodgeState().WithParent(active);
+
+        var idle = new IdleState().AsInitialState(grounded);
+        var move = new MoveState().WithParent(grounded);
+        var sprint = new SprintState().WithParent(grounded);
+        var slide = new SlideState().WithParent(grounded);
+        
+        var jump = new JumpState().AsInitialState(airborne);
+        var fall = new FallState().WithParent(airborne);
+
+        builder
+            .WithState(active)
+            .WithState(grounded)
+            .WithState(airborne)
+            .WithState(dodge)
+            .WithState(idle)
+            .WithState(move)
+            .WithState(sprint)
+            .WithState(slide)
+            .WithState(jump)
+            .WithState(fall);
     }
 }

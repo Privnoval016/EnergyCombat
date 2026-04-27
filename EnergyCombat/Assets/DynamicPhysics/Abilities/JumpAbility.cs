@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Player.Config;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -12,12 +14,9 @@ namespace DynamicPhysics
     {
         #region Configuration
 
-        public float JumpHeight { get; set; }
-        public float CoyoteTime { get; set; }
-        public float JumpBufferTime { get; set; }
-        public float JumpCutMultiplier { get; set; }
-        public float ApexThreshold { get; set; }
-        public float ApexGravityMultiplier { get; set; }
+        public JumpSettings Settings;
+
+        public MovementProfile MovementProfile;
 
         #endregion
 
@@ -31,23 +30,17 @@ namespace DynamicPhysics
 
         #endregion
 
-        public JumpAbility(float jumpHeight = 2.5f, float coyoteTime = 0.12f,
-            float jumpBufferTime = 0.1f, float jumpCutMultiplier = 0.5f,
-            float apexThreshold = 1.5f, float apexGravityMultiplier = 0.4f)
+        public JumpAbility(JumpSettings settings, MovementProfile profile)
         {
-            JumpHeight = jumpHeight;
-            CoyoteTime = coyoteTime;
-            JumpBufferTime = jumpBufferTime;
-            JumpCutMultiplier = jumpCutMultiplier;
-            ApexThreshold = apexThreshold;
-            ApexGravityMultiplier = apexGravityMultiplier;
+            Settings = settings;
+            MovementProfile = profile;
             _lastGroundedTime = float.NegativeInfinity;
             _lastJumpRequestTime = float.NegativeInfinity;
         }
 
         public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
 
-        public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+        public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             float now = Time.time;
 
@@ -57,7 +50,7 @@ namespace DynamicPhysics
                 _jumpConsumed = false;
             }
 
-            for (int i = 0; i < requestCount; i++)
+            for (int i = 0; i < requests.Count; i++)
             {
                 if (requests[i].Type == MotionRequestType.Jump)
                 {
@@ -66,9 +59,9 @@ namespace DynamicPhysics
                 }
             }
 
-            bool hasRequest = (now - _lastJumpRequestTime) <= JumpBufferTime;
-            bool hasGround = (now - _lastGroundedTime) <= CoyoteTime;
-
+            bool hasRequest = (now - _lastJumpRequestTime) <= Settings.JumpBuffer;
+            bool hasGround = (now - _lastGroundedTime) <= Settings.CoyoteTime;
+            
             return hasRequest && hasGround && !_jumpConsumed;
         }
 
@@ -78,8 +71,8 @@ namespace DynamicPhysics
             _jumpConsumed = true;
             _jumpCutApplied = false;
 
-            float gravity = Mathf.Abs(Physics.gravity.y);
-            float jumpSpeed = Mathf.Sqrt(2f * gravity * JumpHeight);
+            float gravity = Mathf.Abs(Physics.gravity.y) * MovementProfile.GravityScale;
+            float jumpSpeed = Mathf.Sqrt(2f * gravity * Settings.JumpHeight);
             context.Velocity.y = jumpSpeed;
 
             context.RemoveTag(MotionTag.Grounded);
@@ -90,14 +83,14 @@ namespace DynamicPhysics
         {
             if (!context.Input.JumpHeld && context.Velocity.y > 0f && !_jumpCutApplied)
             {
-                context.Velocity.y *= JumpCutMultiplier;
+                context.Velocity.y *= Settings.JumpCutMultiplier;
                 _jumpCutApplied = true;
             }
 
             float absVy = Mathf.Abs(context.Velocity.y);
-            if (absVy < ApexThreshold && context.HasTag(MotionTag.Airborne))
+            if (absVy < Settings.ApexThreshold && context.HasTag(MotionTag.Airborne))
             {
-                context.GravityScale *= ApexGravityMultiplier;
+                context.GravityScale *= Settings.ApexGravityMultiplier;
             }
 
             if (context.HasTag(MotionTag.Grounded) && context.Velocity.y <= 0.01f)

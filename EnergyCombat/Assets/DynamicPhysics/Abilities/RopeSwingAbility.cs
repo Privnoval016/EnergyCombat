@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -48,9 +50,9 @@ namespace DynamicPhysics
             return false;
         }
 
-        public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+        public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
-            for (int i = 0; i < requestCount; i++)
+            for (int i = 0; i < requests.Count; i++)
             {
                 if (requests[i].Type == MotionRequestType.RopeAttach && requests[i].Target is RopeEffector effector)
                 {

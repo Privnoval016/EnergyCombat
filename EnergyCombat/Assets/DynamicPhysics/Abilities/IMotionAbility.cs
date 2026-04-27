@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -49,10 +50,9 @@ namespace DynamicPhysics
          *
          * <param name="context">Current motion state.</param>
          * <param name="requests">Pending unconsumed motion requests.</param>
-         * <param name="requestCount">Number of valid entries in the requests array.</param>
          * <returns>True if this ability should activate this frame.</returns>
          */
-        bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount);
+        bool CanActivate(MotionContext context, List<MotionRequest> requests);
 
         /**
          * <summary>

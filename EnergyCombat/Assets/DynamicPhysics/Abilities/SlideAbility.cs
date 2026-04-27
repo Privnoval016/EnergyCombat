@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Player.Config;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -12,12 +14,7 @@ namespace DynamicPhysics
     {
         #region Configuration
 
-        public float SpeedBoostMultiplier { get; set; }
-        public float SlideFriction { get; set; }
-        public float MinSlideSpeed { get; set; }
-        public float MaxDuration { get; set; }
-        public float MinEntrySpeed { get; set; }
-        public float SlideHeightMultiplier { get; set; }
+        public SlideSettings Settings;
 
         /** <summary>Delegate invoked to adjust character height. Parameter is height multiplier.</summary> */
         public System.Action<float> OnHeightChange { get; set; }
@@ -32,30 +29,26 @@ namespace DynamicPhysics
 
         #endregion
 
-        public SlideAbility(float speedBoostMultiplier = 1.3f, float slideFriction = 12f,
-            float minSlideSpeed = 2f, float maxDuration = 1.5f,
-            float minEntrySpeed = 5f, float slideHeightMultiplier = 0.5f)
+        public SlideAbility(SlideSettings settings)
         {
-            SpeedBoostMultiplier = speedBoostMultiplier;
-            SlideFriction = slideFriction;
-            MinSlideSpeed = minSlideSpeed;
-            MaxDuration = maxDuration;
-            MinEntrySpeed = minEntrySpeed;
-            SlideHeightMultiplier = slideHeightMultiplier;
+            Settings = settings;
+            IsActive = false;
+            _slideTimer = 0f;
+            _slideDirection = Vector3.zero;
         }
 
         public bool TryConsumeRequest(MotionContext context, MotionRequest request) => false;
 
-        public bool CanActivate(MotionContext context, MotionRequest[] requests, int requestCount)
+        public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             if (!context.HasTag(MotionTag.Grounded)) return false;
             if (context.HasTag(MotionTag.Dashing) || context.HasTag(MotionTag.WallRunning) || context.HasTag(MotionTag.Swinging)) return false;
 
             Vector3 hVel = context.Velocity;
             hVel.y = 0f;
-            if (hVel.sqrMagnitude < MinEntrySpeed * MinEntrySpeed) return false;
+            if (hVel.sqrMagnitude < Settings.SlideMinEntrySpeed * Settings.SlideMinEntrySpeed) return false;
 
-            for (int i = 0; i < requestCount; i++)
+            for (int i = 0; i < requests.Count; i++)
             {
                 if (requests[i].Type == MotionRequestType.Slide)
                     return true;
@@ -66,7 +59,7 @@ namespace DynamicPhysics
         public void Activate(MotionContext context)
         {
             IsActive = true;
-            _slideTimer = MaxDuration > 0f ? MaxDuration : float.MaxValue;
+            _slideTimer = Settings.SlideMaxDuration > 0f ? Settings.SlideMaxDuration : float.MaxValue;
 
             _slideDirection = context.Velocity;
             _slideDirection.y = 0f;
@@ -82,12 +75,12 @@ namespace DynamicPhysics
                 speed = context.Velocity.magnitude;
             }
 
-            float boostedSpeed = speed * SpeedBoostMultiplier;
+            float boostedSpeed = speed * Settings.SlideBoostMultiplier;
             context.Velocity.x = _slideDirection.x * boostedSpeed;
             context.Velocity.z = _slideDirection.z * boostedSpeed;
 
             context.SetTag(MotionTag.SlidingCrouch);
-            OnHeightChange?.Invoke(SlideHeightMultiplier);
+            OnHeightChange?.Invoke(Settings.SlideHeightMultiplier);
         }
 
         public void Tick(MotionContext context, float deltaTime)
@@ -98,7 +91,7 @@ namespace DynamicPhysics
             hVel.y = 0f;
             float speed = hVel.magnitude;
 
-            float newSpeed = Mathf.Max(0f, speed - SlideFriction * deltaTime);
+            float newSpeed = Mathf.Max(0f, speed - Settings.SlideFriction * deltaTime);
             if (speed > 0.001f)
             {
                 float scale = newSpeed / speed;
@@ -106,7 +99,7 @@ namespace DynamicPhysics
                 context.Velocity.z *= scale;
             }
 
-            if (newSpeed < MinSlideSpeed || _slideTimer <= 0f)
+            if (newSpeed < Settings.SlideMinSpeed || _slideTimer <= 0f)
             {
                 Deactivate(context);
             }
