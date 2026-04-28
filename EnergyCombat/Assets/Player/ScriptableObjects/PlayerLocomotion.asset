@@ -18,15 +18,15 @@ MonoBehaviour:
     FullThrottleThreshold: 0.95
   Jump:
     JumpHeight: 6
-    CoyoteTime: 0.12
-    JumpBuffer: 0.1
+    CoyoteTime: 0.05
+    JumpBuffer: 0.05
     JumpCutMultiplier: 0.5
     ApexThreshold: 0.2
     ApexGravityMultiplier: 0.4
   Dash:
     DashSpeed: 25
     DashDuration: 0.15
-    DashCooldown: 0.8
+    DashCooldown: 0.3
     DashGravityScale: 0.1
   Slide:
     SlideBoostMultiplier: 1.3

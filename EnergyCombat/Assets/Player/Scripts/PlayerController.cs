@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     private MotionInputProviderAdapter _motionInputProvider;
     private bool _jumpPressed;
     private bool _dodgePressed;
+    private bool _sprintPressed;
 
     public StateMachine<PlayerController> StateMachine { get; private set; }
     public MotionOrchestrator MotionOrchestrator => motionOrchestrator;
@@ -33,7 +34,7 @@ public class PlayerController : MonoBehaviour
     public float VerticalVelocity => motionOrchestrator?.Velocity.y ?? 0f;
     public Vector2 MoveInput => _playerInputAdapter?.Snapshot.Move ?? Vector2.zero;
     public float MoveMagnitude => MoveInput.magnitude;
-    public bool IsSprintToggled => _playerInputAdapter?.Snapshot.SprintToggled ?? false;
+    public bool IsSprintToggled => motionOrchestrator?.IsSprinting ?? false;
 
     public bool IsSliding => motionOrchestrator?.IsSlidingCrouch ?? false;
 
@@ -60,14 +61,21 @@ public class PlayerController : MonoBehaviour
         return pressed;
     }
 
-    public void CancelSprintToggle()
+    public bool ConsumeSprintPressed()
     {
-        _playerInputAdapter?.CancelSprintToggle();
+        bool pressed = _sprintPressed;
+        _sprintPressed = false;
+        return pressed;
     }
 
     public bool ShouldSlideFromDodgeIntent()
     {
         return !HasDirectionalMoveInput || ShouldSprint;
+    }
+
+    public void RequestSprint()
+    {
+        motionOrchestrator?.Request(MotionRequestType.Sprint);
     }
 
     public void RequestJump()
@@ -165,6 +173,8 @@ public class PlayerController : MonoBehaviour
         motionOrchestrator.RegisterAbility(new DashAbility(locomotionConfig.Dash));
 
         motionOrchestrator.RegisterAbility(new SlideAbility(locomotionConfig.Slide));
+
+        motionOrchestrator.RegisterAbility(new SprintAbility());
     }
 
     private void HandleButtonEvent(PlayerInputButtonEvent buttonEvent)
@@ -181,6 +191,10 @@ public class PlayerController : MonoBehaviour
         else if (buttonEvent.Button == PlayerInputButton.Dodge)
         {
             _dodgePressed = true;
+        }
+        else if (buttonEvent.Button == PlayerInputButton.Sprint)
+        {
+            _sprintPressed = true;
         }
     }
 

@@ -20,7 +20,7 @@ public static class PlayerStateConstructor
         
         var grounded = new GroundedState().AsInitialState(active);
         var airborne = new AirborneState().WithParent(active);
-        var dodge = new DodgeState().WithParent(active);
+        var dash = new DashState().WithParent(grounded);
 
         var idle = new IdleState().AsInitialState(grounded);
         var move = new MoveState().WithParent(grounded);
@@ -34,7 +34,7 @@ public static class PlayerStateConstructor
             .WithState(active)
             .WithState(grounded)
             .WithState(airborne)
-            .WithState(dodge)
+            .WithState(dash)
             .WithState(idle)
             .WithState(move)
             .WithState(sprint)

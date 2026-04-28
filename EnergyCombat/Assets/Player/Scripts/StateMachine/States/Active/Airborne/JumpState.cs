@@ -6,7 +6,7 @@ public class JumpState : State<PlayerController>
     {
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {
-            if (host.IsDodging) return host.GetState<DodgeState>();
+            if (host.IsDodging) return host.GetState<DashState>();
             if (host.IsGrounded && host.VerticalVelocity <= 0.01f)
             {
                 if (host.IsSliding) return host.GetState<SlideState>();

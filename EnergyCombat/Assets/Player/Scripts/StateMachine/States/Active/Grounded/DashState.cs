@@ -1,8 +1,9 @@
 using StateMachine;
 
-public class DodgeState : State<PlayerController>
+// used for movement dashes (so like after doing a rope swing and landing, we wanna dash to build up acceleration)
+public class DashState : State<PlayerController>
 {
-    public DodgeState()
+    public DashState()
     {
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {

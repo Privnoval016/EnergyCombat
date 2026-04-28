@@ -73,6 +73,9 @@ namespace DynamicPhysics
 
         /** <summary>Whether the character is currently in a sliding crouch state.</summary> */
         public bool IsSlidingCrouch => _context.HasTag(MotionTag.SlidingCrouch);
+        
+        /** <summary>Whether the character is currently sprinting.</summary> */
+        public bool IsSprinting => _context.HasTag(MotionTag.Sprinting);
 
         /** <summary>Current velocity of the character.</summary> */
         public Vector3 Velocity => _context.Velocity;

@@ -1,12 +1,11 @@
 using StateMachine;
 
-public class FallState : State<PlayerController>
+public class AirborneState : State<PlayerController>
 {
-    public FallState()
+    public AirborneState()
     {
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {
-            if (host.IsDodging) return host.GetState<DodgeState>();
             if (host.IsGrounded)
             {
                 if (host.IsSliding) return host.GetState<SlideState>();

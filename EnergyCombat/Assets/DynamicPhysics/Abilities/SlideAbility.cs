@@ -15,10 +15,7 @@ namespace DynamicPhysics
         #region Configuration
 
         public SlideSettings Settings;
-
-        /** <summary>Delegate invoked to adjust character height. Parameter is height multiplier.</summary> */
-        public System.Action<float> OnHeightChange { get; set; }
-
+        
         #endregion
 
         #region State
@@ -57,18 +54,22 @@ namespace DynamicPhysics
             IsActive = true;
             _slideTimer = Settings.SlideMaxDuration > 0f ? Settings.SlideMaxDuration : float.MaxValue;
 
-            _slideDirection = context.Velocity;
-            _slideDirection.y = 0f;
-            float speed = _slideDirection.magnitude;
-            if (speed > 0.001f)
+            float speed;
+            if (context.Velocity != Vector3.zero)
             {
-                _slideDirection *= 1f / speed;
-            }
-            else if (context.CharacterTransform != null)
-            {
-                _slideDirection = context.CharacterTransform.forward;
+                _slideDirection = context.Velocity;
                 _slideDirection.y = 0f;
-                speed = context.Velocity.magnitude;
+                speed = _slideDirection.magnitude;
+                
+                if  (speed > 0.001f) _slideDirection /= speed;
+                
+                if (speed < Settings.SlideMinSpeed) speed = Settings.SlideMinSpeed;
+            }
+            else
+            {
+                _slideDirection = context.CharacterTransform.forward.normalized;
+                _slideDirection.y = 0f;
+                speed = Settings.SlideMinEntrySpeed;
             }
 
             float boostedSpeed = speed * Settings.SlideBoostMultiplier;
@@ -76,7 +77,6 @@ namespace DynamicPhysics
             context.Velocity.z = _slideDirection.z * boostedSpeed;
 
             context.SetTag(MotionTag.SlidingCrouch);
-            OnHeightChange?.Invoke(Settings.SlideHeightMultiplier);
         }
 
         public void Tick(MotionContext context, float deltaTime)
@@ -107,7 +107,6 @@ namespace DynamicPhysics
         {
             IsActive = false;
             context.RemoveTag(MotionTag.SlidingCrouch);
-            OnHeightChange?.Invoke(1f);
         }
     }
 }

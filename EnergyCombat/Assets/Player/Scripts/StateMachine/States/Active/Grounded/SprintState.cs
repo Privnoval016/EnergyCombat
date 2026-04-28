@@ -7,7 +7,7 @@ public class SprintState : State<PlayerController>
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {
             if (host.IsSliding) return host.GetState<SlideState>();
-            if (host.IsDodging) return host.GetState<DodgeState>();
+            if (host.IsDodging) return host.GetState<DashState>();
             if (!host.ShouldSprint)
             {
                 return host.HasDirectionalMoveInput
@@ -17,15 +17,5 @@ public class SprintState : State<PlayerController>
 
             return null;
         }));
-    }
-
-    protected override void OnUpdate(float deltaTime)
-    {
-        
-    }
-
-    protected override void OnExit()
-    {
-        Host.CancelSprintToggle();
     }
 }

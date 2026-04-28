@@ -44,12 +44,6 @@ namespace Systems.Input
             _snapshot.Move = Vector2.zero;
             _snapshot.Look = Vector2.zero;
             _snapshot.JumpHeld = false;
-            _snapshot.SprintToggled = false;
-        }
-
-        public void CancelSprintToggle()
-        {
-            _snapshot.SprintToggled = false;
         }
 
         public void Dispose()
@@ -67,12 +61,12 @@ namespace Systems.Input
 
         public void OnMove(InputAction.CallbackContext context)
         {
-            _snapshot.Move = context.ReadValue<Vector2>();
+            _snapshot.Move = context.ReadValue<Vector2>().normalized;
         }
 
         public void OnLook(InputAction.CallbackContext context)
         {
-            _snapshot.Look = context.ReadValue<Vector2>();
+            _snapshot.Look = context.ReadValue<Vector2>().normalized;
         }
 
         public void OnJump(InputAction.CallbackContext context)
@@ -112,10 +106,10 @@ namespace Systems.Input
 
         public void OnSprint(InputAction.CallbackContext context)
         {
-            if (context.phase == InputActionPhase.Performed)
-            {
-                _snapshot.SprintToggled = !_snapshot.SprintToggled;
-            }
+            // if (context.phase == InputActionPhase.Performed)
+            // {
+            //     _snapshot.SprintToggled = !_snapshot.SprintToggled;
+            // }
 
             EmitButtonEvent(PlayerInputButton.Sprint, context.phase);
         }

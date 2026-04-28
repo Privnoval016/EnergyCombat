@@ -44,6 +44,7 @@ namespace DynamicPhysics
      */
     public static class MotionRequestType
     {
+        public const string Sprint = "Sprint";
         public const string Jump = "Jump";
         public const string Dash = "Dash";
         public const string Slide = "Slide";

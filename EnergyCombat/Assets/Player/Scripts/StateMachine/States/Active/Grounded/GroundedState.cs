@@ -16,9 +16,14 @@ public class GroundedState : State<PlayerController>
 
             if (host.ConsumeJumpPressed())
             {
-                Debug.Log("Jump requested");
                 host.RequestJump();
                 return host.GetState<JumpState>();
+            }
+
+            if (host.ConsumeSprintPressed())
+            {
+                host.RequestSprint();
+                return host.GetState<SprintState>();
             }
 
             if (host.ConsumeDodgePressed())
@@ -29,8 +34,7 @@ public class GroundedState : State<PlayerController>
                     return host.GetState<SlideState>();
                 }
 
-                host.RequestDashFromMoveInput();
-                return host.GetState<DodgeState>();
+                // add functionality for combat dodge later
             }
 
             return null;

@@ -36,7 +36,6 @@ namespace Systems.Input
         public Vector2 Move;
         public Vector2 Look;
         public bool JumpHeld;
-        public bool SprintToggled;
 
         public readonly bool HasMoveInput => Move.sqrMagnitude > 0.0001f;
     }

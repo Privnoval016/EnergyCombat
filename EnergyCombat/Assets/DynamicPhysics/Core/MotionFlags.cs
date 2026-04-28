@@ -21,6 +21,9 @@ namespace DynamicPhysics
 
         /** <summary>Character is not grounded.</summary> */
         public const string Airborne = "Airborne";
+        
+        /** <summary>Character is currently sprinting.</summary> */
+        public const string Sprinting = "Sprinting";
 
         /** <summary>Character is on a slope exceeding the maximum walkable angle.</summary> */
         public const string Sliding = "Sliding";
