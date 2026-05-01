@@ -1,22 +1,29 @@
 using StateMachine;
 
-public static class PlayerStateConstructor
+public class PlayerStateConstructor
 {
-    public static StateMachine<PlayerController> Build(PlayerController host)
+    private readonly State<PlayerController> _root;
+    private readonly PlayerController _host;
+    private readonly StateMachineBuilder<PlayerController> _builder;
+
+    public PlayerStateConstructor(PlayerController host)
     {
-        var root = new RootState();
-        var builder = new StateMachineBuilder<PlayerController>(root);
+        _host = host;
+        _root = new RootState();
+        _builder = new StateMachineBuilder<PlayerController>(_root);
+    }
+    
+    public StateMachine<PlayerController> Construct()
+    {
+        ConstructActiveStates();
         
-        BuildActiveStates(builder, root);
-        
-        
-        var machine = builder.Build(host);
+        var machine = _builder.Build(_host);
         return machine;
     }
 
-    private static void BuildActiveStates(StateMachineBuilder<PlayerController> builder, State<PlayerController> root)
+    private void ConstructActiveStates()
     {
-        var active = new ActiveState().WithParent(root).AsInitialState(root);
+        var active = new ActiveState().WithParent(_root).AsInitialState(_root);
         
         var grounded = new GroundedState().AsInitialState(active);
         var airborne = new AirborneState().WithParent(active);
@@ -25,12 +32,13 @@ public static class PlayerStateConstructor
         var idle = new IdleState().AsInitialState(grounded);
         var move = new MoveState().WithParent(grounded);
         var sprint = new SprintState().WithParent(grounded);
-        var slide = new SlideState().WithParent(grounded);
+        var slide = new SlideState().WithParent(grounded)
+            .WithActivity(new CameraActivity(_host.CameraController, CamMode.OverRightShoulder, 0.2f));
         
         var jump = new JumpState().AsInitialState(airborne);
         var fall = new FallState().WithParent(airborne);
 
-        builder
+        _builder
             .WithState(active)
             .WithState(grounded)
             .WithState(airborne)

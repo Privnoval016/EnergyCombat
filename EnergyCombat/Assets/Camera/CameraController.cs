@@ -19,7 +19,16 @@ public class CameraController: MonoBehaviour
     private void Awake()
     {
         StateMachine = new PushdownAutomata<CameraController, CameraState>(this);
+
+        foreach (var cameraReference in cameraReferences)
+        {
+            cameraReference.cineCam.Priority = 0;
+        }
+        
         StateMachine.ChangeState(CreateBaseState());
+        
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     #region Camera State Management
@@ -28,11 +37,11 @@ public class CameraController: MonoBehaviour
     {
         foreach (var cameraReference in cameraReferences)
         {
-            if (cameraReference.IsBaseState())
+            if (cameraReference.baseState)
                 return cameraReference.Create();
         }
-
-        return null;
+        
+        return cameraReferences[0].Create(true);
     }
 
     private CameraReference GetCamera(CamMode mode)
@@ -50,7 +59,7 @@ public class CameraController: MonoBehaviour
     {
         var cameraReference = GetCamera(mode);
 
-        if (cameraReference.IsBaseState())
+        if (cameraReference.baseState)
         {
             ReturnToBaseCamera();
             return;
@@ -76,13 +85,13 @@ public class CameraController: MonoBehaviour
     [Serializable]
     public struct CameraReference
     {
-        [SerializeField] private CinemachineCamera cineCam;
-        [SerializeField] private CamMode cameraMode;
-        [SerializeField] private bool baseState;
+        public CinemachineCamera cineCam;
+        public CamMode cameraMode;
+        public bool baseState;
         
         public bool IsMatching(CamMode mode) => mode == cameraMode;
-        public bool IsBaseState() => baseState;
-        public CameraState Create() => new CameraState(cineCam, cameraMode, baseState);
+        public CameraState Create(bool overrideBase = false) 
+            => new(cineCam, cameraMode, baseState || overrideBase);
     }
     
     #endregion

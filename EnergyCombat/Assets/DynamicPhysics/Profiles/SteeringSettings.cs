@@ -106,6 +106,42 @@ namespace DynamicPhysics
 
         /**
          * <summary>
+         * Smooth rotation speed when turning to face input direction.
+         * Higher values = snappier rotation. Controls how quickly character orients toward movement input.
+         * </summary>
+         */
+        [Header("Rotation Settings")]
+        [Tooltip("Rotation smoothing speed. Higher = snappier turns. ~10 is responsive.")]
+        [Range(1f, 30f)]
+        public float RotationSpeed;
+
+        /**
+         * <summary>
+         * How aggressively the facing direction responds to input changes.
+         * Controls the update speed of desired facing direction in PlayerRotationStage.
+         * Higher values mean faster facing direction changes. Multiplied by ControlFactor
+         * so high-speed drifting has sluggish facing updates, low-speed movement has snappy updates.
+         * </summary>
+         */
+        [Tooltip("Facing direction update responsiveness. Higher = snappier facing changes at low speed.")]
+        [Range(5f, 50f)]
+        public float FacingDirectionUpdateSpeed;
+
+        /**
+         * <summary>
+         * Angle range over which the skid influence ramps during hard stops.
+         * Controls how long the "facing momentum" effect lasts when making sharp turns.
+         * Larger values = longer skid duration (character faces momentum direction longer before turning).
+         * Example: threshold=110, window=60 means skid influence ramps between 110-170 degrees.
+         * </summary>
+         */
+        [Header("Hard Stop Rotation")]
+        [Tooltip("Angle range for skid effect during hard stops. Larger = longer skid duration.")]
+        [Range(20f, 100f)]
+        public float HardStopSkidWindowSize;
+
+        /**
+         * <summary>
          * Creates a default steering configuration suitable for responsive 3D character movement.
          * </summary>
          */
@@ -123,6 +159,9 @@ namespace DynamicPhysics
             HardStopDriftMinSpeedRatio = 0.7f,
             HardStopDriftDeceleration = 120f,
             HardStopDriftReaccelerationMultiplier = 1.5f,
+            RotationSpeed = 10f,
+            FacingDirectionUpdateSpeed = 20f,
+            HardStopSkidWindowSize = 60f,
         };
     }
 }

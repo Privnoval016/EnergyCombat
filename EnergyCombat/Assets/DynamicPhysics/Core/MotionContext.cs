@@ -108,6 +108,18 @@ namespace DynamicPhysics
          */
         public float SteeringMultiplier;
 
+        /**
+         * <summary>
+         * Control factor based on current speed and air state.
+         * Combines speed-dependent control, air control, and contextual modifiers.
+         * Set by InputSteeringStage, used by PlayerRotationStage for dampened rotation.
+         * </summary>
+         */
+        public float ControlFactor;
+
+        /** <summary>Direction the character should face. Set by PlayerRotationStage, used by rotation application.</summary> */
+        public Vector3 DesiredFacingDirection;
+
         #endregion
 
         /**
@@ -126,6 +138,8 @@ namespace DynamicPhysics
             GroundAngle = 0f;
             GravityScale = 1f;
             SteeringMultiplier = 1f;
+            ControlFactor = 1f;
+            DesiredFacingDirection = Vector3.zero;
             _tags.Clear();
         }
     }

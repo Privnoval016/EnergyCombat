@@ -48,5 +48,8 @@ namespace DynamicPhysics
 
         /** <summary>Character is wall running.</summary> */
         public const string WallRunning = "WallRunning";
+
+        /** <summary>Disable automatic rotation based on input direction.</summary> */
+        public const string NoAutoRotate = "NoAutoRotate";
     }
 }

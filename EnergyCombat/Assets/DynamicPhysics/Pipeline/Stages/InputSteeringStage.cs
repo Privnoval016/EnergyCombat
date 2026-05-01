@@ -46,6 +46,9 @@ namespace DynamicPhysics
             
             bool airborne = context.HasTag(MotionTag.Airborne);
             float controlFactor = GetControlFactor(steering, targetSpeed, currentSpeed, contextualControl, airborne, config, context);
+            
+            // Store control factor for other stages to use (e.g., rotation dampening)
+            context.ControlFactor = controlFactor;
 
             // Apply steering logic
             if (hasInput)

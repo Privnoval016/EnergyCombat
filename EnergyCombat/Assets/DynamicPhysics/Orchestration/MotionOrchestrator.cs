@@ -102,6 +102,7 @@ namespace DynamicPhysics
 
             _pipeline = new MotionPipeline();
             _pipeline.AddStage(new InputSteeringStage());
+            _pipeline.AddStage(new PlayerRotationStage());
             _pipeline.AddStage(new AbilityInfluenceStage());
             _pipeline.AddStage(new ExternalForceStage());
             _pipeline.AddStage(new GravityStage());
@@ -157,6 +158,9 @@ namespace DynamicPhysics
 
             // 8. Apply to rigidbody
             _motor.ApplyVelocity(_context);
+
+            // 8b. Apply rotation if desired facing direction is set
+            ApplyRotation(_context, _config.Steering);
 
             // 9. Clear request buffers
             _requestBuffer.Clear();
@@ -392,6 +396,23 @@ namespace DynamicPhysics
         private void SortConstraints()
         {
             _constraints.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+        }
+
+        private void ApplyRotation(MotionContext context, SteeringSettings steering)
+        {
+            // Skip if no desired facing direction is set
+            if (context.DesiredFacingDirection.sqrMagnitude < 0.01f)
+                return;
+
+            // Calculate target rotation to face desired direction
+            Vector3 targetDir = context.DesiredFacingDirection;
+            Quaternion targetRotation = Quaternion.LookRotation(targetDir, Vector3.up);
+
+            // Smoothly rotate towards target using steering's rotation speed parameter
+            Quaternion currentRotation = _rigidbody.rotation;
+            Quaternion newRotation = Quaternion.Lerp(currentRotation, targetRotation, steering.RotationSpeed * context.DeltaTime);
+
+            _rigidbody.rotation = newRotation;
         }
 
         #endregion

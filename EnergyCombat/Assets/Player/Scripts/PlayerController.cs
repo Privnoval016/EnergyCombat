@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
     #region Components
 
     [Header("References")]
+    [SerializeField] private CameraController cameraController;
     [SerializeField] private MotionOrchestrator motionOrchestrator;
     [SerializeField] private Transform movementOrientation;
     [SerializeField] private PlayerLocomotionConfig locomotionConfig;
@@ -23,6 +24,7 @@ public class PlayerController : MonoBehaviour
 
     public StateMachine<PlayerController> StateMachine { get; private set; }
     public MotionOrchestrator MotionOrchestrator => motionOrchestrator;
+    public CameraController CameraController => cameraController;
 
     #endregion
 
@@ -108,14 +110,19 @@ public class PlayerController : MonoBehaviour
         {
             motionOrchestrator = GetComponent<MotionOrchestrator>();
         }
-
-        if (movementOrientation == null && Camera.main != null)
+        
+        if (cameraController == null)
         {
-            movementOrientation = Camera.main.transform;
+            cameraController = Camera.main?.GetComponent<CameraController>();
+        }
+
+        if (movementOrientation == null)
+        {
+            movementOrientation = cameraController?.transform;
         }
 
         InitializeInputAndOrchestration();
-        StateMachine = PlayerStateConstructor.Build(this);
+        StateMachine = new PlayerStateConstructor(this).Construct();
         
         StateMachine.Start();
     }
