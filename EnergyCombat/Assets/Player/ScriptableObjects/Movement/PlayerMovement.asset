@@ -19,13 +19,16 @@ MonoBehaviour:
     MaxTurnRate: 720
     SprintSpeed: 48
     SprintAcceleration: 500
-    HighSpeedControl: 0.1
+    HighSpeedControl: 0.3
     LowSpeedControl: 1
-    HardStopDriftAngleThreshold: 85
+    HardStopDriftAngleThreshold: 135
     HardStopDriftMinSpeedRatio: 0.24
     HardStopDriftDeceleration: 3
     HardStopDriftReaccelerationMultiplier: 0.3
+    RotationSpeed: 25
+    FacingDirectionUpdateSpeed: 40
+    HardStopSkidWindowSize: 60
   GravityScale: 8
-  Friction: 38.6
+  Friction: 50
   AirControl: 0.103
   SnapForce: 5

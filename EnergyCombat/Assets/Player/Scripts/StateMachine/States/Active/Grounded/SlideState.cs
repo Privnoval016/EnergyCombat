@@ -6,8 +6,16 @@ public class SlideState : State<PlayerController>
     {
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {
+            if (host.IsAttacking) return host.GetState<AttackingState>();
+
             if (!host.IsSliding)
             {
+                if (host.ShouldApplyPostBoost())
+                {
+                    host.RequestSprint();
+                    return host.GetState<MoveState>();
+                }
+
                 if (host.ShouldSprint) return host.GetState<SprintState>();
                 if (host.HasDirectionalMoveInput) return host.GetState<MoveState>();
                 return host.GetState<IdleState>();

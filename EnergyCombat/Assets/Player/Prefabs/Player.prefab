@@ -158,6 +158,7 @@ GameObject:
   - component: {fileID: 4813496900732552107}
   - component: {fileID: 3645171175461346969}
   - component: {fileID: 5295536920856279963}
+  - component: {fileID: 2708719737648154043}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -327,3 +328,19 @@ MonoBehaviour:
   motionOrchestrator: {fileID: 3645171175461346969}
   movementOrientation: {fileID: 0}
   locomotionConfig: {fileID: 11400000, guid: 2f15e492d2eaf43dcad1d75f573985ca, type: 2}
+  combatController: {fileID: 0}
+--- !u!114 &2708719737648154043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018543644747926841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75614ba5660e047deb05377cedf9bbf8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.Orchestration.CombatController
+  _defaultLoadouts:
+  - {fileID: 11400000, guid: 3f87fcb8a1ded4bc196a07227cc64346, type: 2}
+  _animationDriverSource: {fileID: 0}

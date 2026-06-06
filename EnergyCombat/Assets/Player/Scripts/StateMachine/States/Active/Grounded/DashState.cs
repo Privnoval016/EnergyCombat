@@ -7,6 +7,9 @@ public class DashState : State<PlayerController>
     {
         WithTransition(new FuncTransition<PlayerController>((host, _) =>
         {
+            /* Attacks cancel the dash and enter the attacking branch. */
+            if (host.IsAttacking) return host.GetState<AttackingState>();
+
             if (host.IsDodging)
             {
                 return null;

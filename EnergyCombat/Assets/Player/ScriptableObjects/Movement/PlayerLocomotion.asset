@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf9be25aa97ec4088b920c1bf177f756, type: 3}
+  m_Name: PlayerLocomotion
+  m_EditorClassIdentifier: Assembly-CSharp::Player.Config.PlayerLocomotionConfig
+  MovementProfile: {fileID: 11400000, guid: b9fedbaa513584b16ac15ee19105b76d, type: 2}
+  InputThresholds:
+    MoveInputThreshold: 0.15
+    FullThrottleThreshold: 0.95
+  Jump:
+    JumpHeight: 6
+    CoyoteTime: 0.05
+    JumpBuffer: 0.05
+    JumpCutMultiplier: 0.5
+    ApexThreshold: 0.25
+    ApexGravityMultiplier: 0.4
+  Dash:
+    DashSpeed: 50
+    DashDuration: 0.15
+    DashCooldown: 0.3
+    DashGravityScale: 0.1
+  Slide:
+    SlideBoostMultiplier: 1.3
+    SlideFriction: 12
+    SlideMinSpeed: 2
+    SlideMaxDuration: 0.75
+    SlideMinEntrySpeed: 45
+  WallRun:
+    WallDetectionDistance: 0.7
+    WallLayers:
+      serializedVersion: 2
+      m_Bits: 8
+    MaxDuration: 5
+    WallRunSpeed: 48
+    WallRunGravityScale: 0.02
+    WallStickForce: 12
+    MinEntrySpeed: 4
+    MinWallAngle: 60
+    RequireInputToSustain: 1
+    InputSustainAngleThreshold: 70
+    ReactivationCooldown: 0.25
+  LedgeGrab:
+    DetectionDistance: 0.6
+    LedgeLayers:
+      serializedVersion: 2
+      m_Bits: 8
+    MaxLedgeReach: 2.2
+    MinLedgeHeight: 0.8
+    GrabHoldTime: 0.15
+    ClimbDuration: 0.4
+    MinClimbUpSpeed: 2
+    MinClimbForwardSpeed: 1.5
+    ClimbClearanceAbove: 0.5
+    ClimbClearanceForward: 0.8
+    MaxEntryUpwardVelocity: 2
+    DetectionChestHeight: 1.4
+    WallSearchArcAngle: 85
+    MomentumPreservationRatio: 0.7
+  WallKick:
+    WallDetectionDistance: 0.8
+    WallLayers:
+      serializedVersion: 2
+      m_Bits: 8
+    MinWallAngle: 30
+    KickHeight: 55
+    KickOutDistance: 55
+    SameWallHeightScale: -0.3
+    SameWallAngleThreshold: 80
+    KickCooldown: 0.3
+    MinAirborneTime: 0.05
+  PostStateBoost:
+    Enabled: 1
+    AngleThreshold: 83.5

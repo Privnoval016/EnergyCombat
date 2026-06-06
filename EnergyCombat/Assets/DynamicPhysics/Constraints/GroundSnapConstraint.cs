@@ -16,18 +16,18 @@ namespace DynamicPhysics
     {
         public int Priority => 0;
 
-        /** <summary>Downward force applied to maintain ground contact. Should be at least gravity magnitude.</summary> */
-        public float SnapForce { get; set; }
+        // Live reference to the per-frame config so SnapForce always reflects the active profile.
+        private readonly RuntimeMotionConfig _config;
 
-        public GroundSnapConstraint(float snapForce = 20f)
+        public GroundSnapConstraint(RuntimeMotionConfig config)
         {
-            SnapForce = snapForce;
+            _config = config;
         }
 
         public void Enforce(MotionContext context)
         {
             if (!context.HasTag(MotionTag.Grounded)) return;
-            if (context.Velocity.y > 0.1f) return;  // Don't snap if jumping upward
+            if (context.Velocity.y > 0.1f) return;
 
             Vector3 normal = context.GroundNormal;
             if (normal.sqrMagnitude < 0.5f) normal = Vector3.up;
@@ -37,13 +37,11 @@ namespace DynamicPhysics
 
             if (verticalComponent < 0f)
             {
-                // Project velocity onto ground plane (remove component going into ground)
                 vel -= normal * verticalComponent;
             }
             else
             {
-                // Apply strong downward snap force to prevent floating
-                vel.y = -SnapForce * context.DeltaTime;
+                vel.y = -_config.SnapForce * context.DeltaTime;
             }
 
             context.Velocity = vel;

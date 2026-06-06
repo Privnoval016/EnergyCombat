@@ -29,6 +29,9 @@ namespace DynamicPhysics
         /** <summary>Air control multiplier (0-1).</summary> */
         public float AirControl;
 
+        /** <summary>Downward force applied each grounded tick to maintain ground contact.</summary> */
+        public float SnapForce;
+
         /** <summary>Active modifiers for this tick, sorted by Order. Pre-allocated list.</summary> */
         public readonly List<IMotionModifier> ActiveModifiers = new(16);
 
@@ -52,6 +55,7 @@ namespace DynamicPhysics
             GravityScale = profile.GravityScale;
             Friction = profile.Friction;
             AirControl = profile.AirControl;
+            SnapForce = profile.SnapForce;
 
             ActiveModifiers.Clear();
             ActiveConstraints.Clear();

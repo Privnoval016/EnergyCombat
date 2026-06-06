@@ -1,10 +1,11 @@
+using Combat;
 using DynamicPhysics;
 using Player.Config;
 using StateMachine;
 using Systems.Input;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, ILocomotionState
 {
     #region Variables
 
@@ -16,15 +17,20 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform movementOrientation;
     [SerializeField] private PlayerLocomotionConfig locomotionConfig;
 
+    [Header("Combat")]
+    [SerializeField] private CombatController combatController;
+
     private PlayerInputAdapter _playerInputAdapter;
     private MotionInputProviderAdapter _motionInputProvider;
     private bool _jumpPressed;
     private bool _dodgePressed;
     private bool _sprintPressed;
+    private bool _landingBoostPending;
 
     public StateMachine<PlayerController> StateMachine { get; private set; }
     public MotionOrchestrator MotionOrchestrator => motionOrchestrator;
     public CameraController CameraController => cameraController;
+    public CombatController CombatController => combatController;
 
     #endregion
 
@@ -33,14 +39,27 @@ public class PlayerController : MonoBehaviour
     #region Locomotion State Queries
 
     public bool IsGrounded => motionOrchestrator?.IsGrounded ?? false;
+    public bool IsAirborne => !(motionOrchestrator?.IsGrounded ?? true);
+    public bool IsSprinting => motionOrchestrator?.IsSprinting ?? false;
+    public bool IsDodging => motionOrchestrator?.IsDashing ?? false;
+
     public float VerticalVelocity => motionOrchestrator?.Velocity.y ?? 0f;
     public Vector2 MoveInput => _playerInputAdapter?.Snapshot.Move ?? Vector2.zero;
     public float MoveMagnitude => MoveInput.magnitude;
-    public bool IsSprintToggled => motionOrchestrator?.IsSprinting ?? false;
+    public bool IsSprintToggled => IsSprinting;
 
     public bool IsSliding => motionOrchestrator?.IsSlidingCrouch ?? false;
+    public bool IsWallRunning => motionOrchestrator?.Context?.HasTag(MotionTag.WallRunning) ?? false;
+    public bool IsLedgeGrabbing => motionOrchestrator?.Context?.HasTag(MotionTag.LedgeGrabbing) ?? false;
+    public bool IsWallKicking => motionOrchestrator?.Context?.HasTag(MotionTag.WallKicking) ?? false;
 
-    public bool IsDodging => motionOrchestrator?.IsDashing ?? false;
+    /**
+     * <summary>
+     * <c>true</c> while <c>CombatController</c> is actively executing an ability pipeline.
+     * Used by the state machine to enter and remain in <c>AttackingState</c>.
+     * </summary>
+     */
+    public bool IsAttacking => combatController?.IsExecuting ?? false;
 
     public bool HasDirectionalMoveInput => MoveMagnitude >= InputThresholds.MoveInputThreshold;
 
@@ -52,7 +71,6 @@ public class PlayerController : MonoBehaviour
     {
         bool pressed = _jumpPressed;
         _jumpPressed = false;
-        Debug.Log("Jump pressed consumed: " + pressed);
         return pressed;
     }
 
@@ -73,6 +91,33 @@ public class PlayerController : MonoBehaviour
     public bool ShouldSlideFromDodgeIntent()
     {
         return !HasDirectionalMoveInput || ShouldSprint;
+    }
+
+    /** <summary>Marks that a landing dash boost should fire on the next grounded landing.</summary> */
+    public void SetLandingBoostPending() => _landingBoostPending = true;
+
+    /** <summary>Returns <c>true</c> and clears the flag if a landing boost was pending.</summary> */
+    public bool ConsumeLandingBoostPending()
+    {
+        bool v = _landingBoostPending;
+        _landingBoostPending = false;
+        return v;
+    }
+
+    /**
+     * <summary>
+     * Returns <c>true</c> if post-state dash boost conditions are met: boost is enabled,
+     * the player has directional input, and that input is within
+     * <see cref="PostStateBoostSettings.AngleThreshold"/> degrees of the character's forward.
+     * </summary>
+     */
+    public bool ShouldApplyPostBoost()
+    {
+        if (locomotionConfig == null) return false;
+        var cfg = locomotionConfig.PostStateBoost;
+        if (!cfg.Enabled) return false;
+        if (!HasDirectionalMoveInput) return false;
+        return Vector3.Angle(transform.forward, ComputeWorldMoveDirection(MoveInput)) <= cfg.AngleThreshold;
     }
 
     public void RequestSprint()
@@ -176,16 +221,18 @@ public class PlayerController : MonoBehaviour
     {
 
         motionOrchestrator.RegisterAbility(new JumpAbility(locomotionConfig.Jump, locomotionConfig.MovementProfile));
-
         motionOrchestrator.RegisterAbility(new DashAbility(locomotionConfig.Dash));
-
         motionOrchestrator.RegisterAbility(new SlideAbility(locomotionConfig.Slide));
-
         motionOrchestrator.RegisterAbility(new SprintAbility());
+        motionOrchestrator.RegisterAbility(new WallRunAbility(locomotionConfig.WallRun));
+        motionOrchestrator.RegisterAbility(new WallKickAbility(locomotionConfig.WallKick, locomotionConfig.Jump, locomotionConfig.MovementProfile));
+        motionOrchestrator.RegisterAbility(new LedgeGrabAbility(locomotionConfig.LedgeGrab));
     }
 
     private void HandleButtonEvent(PlayerInputButtonEvent buttonEvent)
     {
+        HandleCombatInput(buttonEvent);
+
         if (buttonEvent.Phase != PlayerInputPhase.Performed)
         {
             return;
@@ -203,6 +250,34 @@ public class PlayerController : MonoBehaviour
         {
             _sprintPressed = true;
         }
+    }
+
+    private void HandleCombatInput(PlayerInputButtonEvent buttonEvent)
+    {
+        if (combatController == null) return;
+
+        CombatInputButton? combatButton = buttonEvent.Button switch
+        {
+            PlayerInputButton.LightAttack => CombatInputButton.LightAttack,
+            PlayerInputButton.HeavyAttack => CombatInputButton.HeavyAttack,
+            _ => null
+        };
+
+        if (combatButton == null) return;
+
+        CombatInputPhase phase = buttonEvent.Phase switch
+        {
+            PlayerInputPhase.Started => CombatInputPhase.Started,
+            PlayerInputPhase.Performed => CombatInputPhase.Performed,
+            PlayerInputPhase.Canceled => CombatInputPhase.Canceled,
+            _ => CombatInputPhase.Performed
+        };
+
+        combatController.PushInput(new CombatInputEvent(
+            combatButton.Value,
+            phase,
+            UnityEngine.Time.unscaledTime
+        ));
     }
 
     private InputThresholdSettings InputThresholds =>

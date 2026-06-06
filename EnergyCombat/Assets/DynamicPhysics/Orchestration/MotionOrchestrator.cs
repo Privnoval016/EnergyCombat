@@ -109,7 +109,7 @@ namespace DynamicPhysics
             _pipeline.AddStage(new ModifierStage());
             _pipeline.AddStage(new ConstraintStage());
             
-            _constraints.Add(new GroundSnapConstraint(defaultProfile.SnapForce));
+            _constraints.Add(new GroundSnapConstraint(_config));
         }
 
         private void FixedUpdate()
@@ -362,6 +362,7 @@ namespace DynamicPhysics
                 _config.GravityScale = 1f;
                 _config.Friction = 8f;
                 _config.AirControl = 0.4f;
+                _config.SnapForce = 20f;
                 _config.ActiveModifiers.Clear();
                 _config.ActiveConstraints.Clear();
                 _config.ActiveAbilities.Clear();

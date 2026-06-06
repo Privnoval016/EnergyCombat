@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Combat;
 using UnityEngine;
 
 namespace DynamicPhysics
@@ -13,10 +14,11 @@ namespace DynamicPhysics
      * <remarks>
      * Allocated once by the orchestrator and reused every frame to avoid GC pressure.
      * Fields are public for direct access in performance-critical pipeline stages.
-     * Tags replace a hardcoded flags enum — any system can set arbitrary string tags.
+     * Implements <see cref="ITagContainer"/> — tags use the strongly-typed <see cref="Tag"/> struct
+     * rather than raw strings, providing value equality and type safety.
      * </remarks>
      */
-    public class MotionContext
+    public class MotionContext : ITagContainer
     {
         #region Velocity State
 
@@ -69,26 +71,26 @@ namespace DynamicPhysics
 
         #region Tags
 
-        private readonly HashSet<string> _tags = new(16);
+        private readonly HashSet<Tag> _tags = new(16);
 
         /**
          * <summary>Checks whether a tag is currently active.</summary>
-         * <param name="tag">The tag to check. Use <see cref="MotionTag"/> constants or custom strings.</param>
-         * <returns>True if the tag is present.</returns>
+         * <param name="tag">The tag to check. Use <see cref="MotionTag"/> constants.</param>
+         * <returns><c>true</c> if the tag is present.</returns>
          */
-        public bool HasTag(string tag) => _tags.Contains(tag);
+        public bool HasTag(Tag tag) => _tags.Contains(tag);
 
         /**
          * <summary>Sets (adds) a tag on this context.</summary>
-         * <param name="tag">The tag to set.</param>
+         * <param name="tag">The tag to add.</param>
          */
-        public void SetTag(string tag) => _tags.Add(tag);
+        public void SetTag(Tag tag) => _tags.Add(tag);
 
         /**
          * <summary>Removes a tag from this context.</summary>
          * <param name="tag">The tag to remove.</param>
          */
-        public void RemoveTag(string tag) => _tags.Remove(tag);
+        public void RemoveTag(Tag tag) => _tags.Remove(tag);
 
         /** <summary>Removes all tags.</summary> */
         public void ClearTags() => _tags.Clear();

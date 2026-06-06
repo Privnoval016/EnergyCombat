@@ -8,74 +8,46 @@ namespace DynamicPhysics
      * Wall run ability that detects walls via raycasts and applies wall-running physics.
      * Auto-activates when airborne near a wall with sufficient speed.
      * Intercepts Jump requests to perform wall jumps.
+     * All parameters are controlled via <see cref="WallRunSettings"/>.
      * </summary>
      */
     public class WallRunAbility : IMotionAbility
     {
-        #region Configuration
-
-        public float WallDetectionDistance { get; set; }
-        public LayerMask WallLayers { get; set; }
-        public float MaxDuration { get; set; }
-        public float WallRunSpeed { get; set; }
-        public float WallRunGravityScale { get; set; }
-        public float WallStickForce { get; set; }
-        public float MinEntrySpeed { get; set; }
-        public float MinWallAngle { get; set; }
-        public float WallJumpUpForce { get; set; }
-        public float WallJumpOutForce { get; set; }
-
-        #endregion
-
-        #region State
+        private readonly WallRunSettings _settings;
 
         public bool IsActive { get; private set; }
         private float _wallRunTimer;
         private Vector3 _wallNormal;
         private Vector3 _wallForward;
+        private float _lastDeactivationTime = float.NegativeInfinity;
 
-        #endregion
-
-        public WallRunAbility(float wallDetectionDistance = 0.7f, float maxDuration = 1.2f,
-            float wallRunSpeed = 10f, float wallRunGravityScale = 0.15f,
-            float wallStickForce = 8f, float minEntrySpeed = 4f,
-            float minWallAngle = 60f, float wallJumpUpForce = 8f,
-            float wallJumpOutForce = 6f)
+        public WallRunAbility(WallRunSettings settings)
         {
-            WallDetectionDistance = wallDetectionDistance;
-            WallLayers = ~0;
-            MaxDuration = maxDuration;
-            WallRunSpeed = wallRunSpeed;
-            WallRunGravityScale = wallRunGravityScale;
-            WallStickForce = wallStickForce;
-            MinEntrySpeed = minEntrySpeed;
-            MinWallAngle = minWallAngle;
-            WallJumpUpForce = wallJumpUpForce;
-            WallJumpOutForce = wallJumpOutForce;
+            _settings = settings;
         }
 
         /**
          * <summary>
-         * Intercepts Jump requests during wall run to perform a wall jump.
+         * On a Jump request during wall run, ends the wall run without consuming the request.
+         * WallKickAbility (registered after this) handles the actual kick impulse uniformly.
          * </summary>
          */
         public bool TryConsumeRequest(MotionContext context, MotionRequest request)
         {
-            if (request.Type == MotionRequestType.Jump)
-            {
-                WallJump(context);
-                return true;
-            }
-            return false;
+            if (!IsActive) return false;
+            if (request.Type != MotionRequestType.Jump) return false;
+            Deactivate(context);
+            return false; // pass the request through so WallKickAbility can handle it
         }
 
         public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             if (!context.HasTag(MotionTag.Airborne)) return false;
+            if (Time.time - _lastDeactivationTime < _settings.ReactivationCooldown) return false;
 
             Vector3 hVel = context.Velocity;
             hVel.y = 0f;
-            if (hVel.sqrMagnitude < MinEntrySpeed * MinEntrySpeed) return false;
+            if (hVel.sqrMagnitude < _settings.MinEntrySpeed * _settings.MinEntrySpeed) return false;
 
             if (context.HasTag(MotionTag.Dashing) || context.HasTag(MotionTag.Swinging)) return false;
             if (context.CharacterTransform == null) return false;
@@ -86,12 +58,13 @@ namespace DynamicPhysics
         public void Activate(MotionContext context)
         {
             IsActive = true;
-            _wallRunTimer = MaxDuration;
+            _wallRunTimer = _settings.MaxDuration;
 
             context.SetTag(MotionTag.WallRunning);
             context.SetTag(MotionTag.WallContact);
+            context.SetTag(MotionTag.NoAutoRotate);
             context.RemoveTag(MotionTag.Airborne);
-            context.Velocity.y = 0f;
+            context.Velocity = new Vector3(context.Velocity.x, 0f, context.Velocity.z);
         }
 
         public void Tick(MotionContext context, float deltaTime)
@@ -104,26 +77,48 @@ namespace DynamicPhysics
                 return;
             }
 
-            context.GravityScale *= WallRunGravityScale;
-            float progressRatio = 1f - (_wallRunTimer / MaxDuration);
+            if (_settings.RequireInputToSustain)
+            {
+                Vector2 moveInput = context.Input.MoveInput;
+                if (moveInput.sqrMagnitude < 0.01f)
+                {
+                    Deactivate(context);
+                    return;
+                }
+
+                Vector3 worldMove = context.Input.CameraForward * moveInput.y
+                                  + context.Input.CameraRight * moveInput.x;
+                worldMove.y = 0f;
+                if (worldMove.sqrMagnitude > 0.001f)
+                {
+                    worldMove.Normalize();
+                    if (Vector3.Angle(worldMove, _wallForward) > _settings.InputSustainAngleThreshold)
+                    {
+                        Deactivate(context);
+                        return;
+                    }
+                }
+            }
+
+            context.GravityScale *= _settings.WallRunGravityScale;
+            float progressRatio = 1f - (_wallRunTimer / _settings.MaxDuration);
             context.Velocity.y -= progressRatio * 5f * deltaTime;
 
             if (context.HasTag(MotionTag.Grounded))
-            {
                 Deactivate(context);
-            }
         }
 
         public Vector3 GetVelocityInfluence(MotionContext context)
         {
             if (!IsActive) return Vector3.zero;
 
-            Vector3 desiredVel = _wallForward * WallRunSpeed;
-            Vector3 currentHorizontal = context.Velocity;
-            currentHorizontal.y = 0f;
+            context.DesiredFacingDirection = _wallForward;
+
+            Vector3 desiredVel = _wallForward * _settings.WallRunSpeed;
+            Vector3 currentHorizontal = new Vector3(context.Velocity.x, 0f, context.Velocity.z);
 
             Vector3 influence = (desiredVel - currentHorizontal) * 0.3f;
-            influence -= _wallNormal * WallStickForce * context.DeltaTime;
+            influence -= _wallNormal * _settings.WallStickForce * context.DeltaTime;
 
             return influence;
         }
@@ -131,51 +126,31 @@ namespace DynamicPhysics
         public void Deactivate(MotionContext context)
         {
             IsActive = false;
+            _lastDeactivationTime = Time.time;
             context.RemoveTag(MotionTag.WallRunning);
             context.RemoveTag(MotionTag.WallContact);
+            context.RemoveTag(MotionTag.NoAutoRotate);
             if (!context.HasTag(MotionTag.Grounded))
-            {
                 context.SetTag(MotionTag.Airborne);
-            }
         }
-
-        /**
-         * <summary>
-         * Applies wall jump forces and deactivates the wall run.
-         * </summary>
-         */
-        public void WallJump(MotionContext context)
-        {
-            if (!IsActive) return;
-            context.Velocity.y = WallJumpUpForce;
-            context.Velocity += _wallNormal * WallJumpOutForce;
-            Deactivate(context);
-        }
-
-        #region Wall Detection
 
         private bool DetectWall(MotionContext context)
         {
             Transform t = context.CharacterTransform;
             Vector3 pos = context.Position + Vector3.up * 0.5f;
 
-            Vector3 forward = context.Velocity;
-            forward.y = 0f;
+            Vector3 forward = new Vector3(context.Velocity.x, 0f, context.Velocity.z);
             if (forward.sqrMagnitude < 0.1f)
-            {
                 forward = t.forward;
-            }
             else
-            {
-                forward *= 1f / Mathf.Sqrt(forward.sqrMagnitude);
-            }
+                forward.Normalize();
 
             Vector3 right = Vector3.Cross(Vector3.up, forward);
 
-            if (Physics.Raycast(pos, right, out RaycastHit hitRight, WallDetectionDistance, WallLayers, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(pos, right, out RaycastHit hitRight,
+                    _settings.WallDetectionDistance, _settings.WallLayers, QueryTriggerInteraction.Ignore))
             {
-                float angle = Vector3.Angle(-hitRight.normal, forward);
-                if (angle >= MinWallAngle)
+                if (Vector3.Angle(-hitRight.normal, forward) >= _settings.MinWallAngle)
                 {
                     _wallNormal = hitRight.normal;
                     _wallForward = Vector3.Cross(_wallNormal, Vector3.up).normalized;
@@ -184,10 +159,10 @@ namespace DynamicPhysics
                 }
             }
 
-            if (Physics.Raycast(pos, -right, out RaycastHit hitLeft, WallDetectionDistance, WallLayers, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(pos, -right, out RaycastHit hitLeft,
+                    _settings.WallDetectionDistance, _settings.WallLayers, QueryTriggerInteraction.Ignore))
             {
-                float angle = Vector3.Angle(-hitLeft.normal, forward);
-                if (angle >= MinWallAngle)
+                if (Vector3.Angle(-hitLeft.normal, forward) >= _settings.MinWallAngle)
                 {
                     _wallNormal = hitLeft.normal;
                     _wallForward = Vector3.Cross(_wallNormal, Vector3.up).normalized;
@@ -198,7 +173,5 @@ namespace DynamicPhysics
 
             return false;
         }
-
-        #endregion
     }
 }

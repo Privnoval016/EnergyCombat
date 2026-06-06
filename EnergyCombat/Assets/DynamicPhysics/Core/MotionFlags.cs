@@ -1,15 +1,17 @@
+using Combat;
+
 namespace DynamicPhysics
 {
     /**
      * <summary>
-     * Provides built-in string constants for common motion tags.
+     * Provides built-in <see cref="Tag"/> constants for common motion states.
      * Tags replace a hardcoded flags enum, allowing any system to define custom tags
      * without modifying core code.
      * </summary>
      *
      * <remarks>
-     * These are convenience constants for common states. Users can define and use
-     * any arbitrary string tag: <c>context.SetTag("MyCustomState")</c>.
+     * These are convenience constants for common states. Custom tags can be defined
+     * in any static class: <c>public static readonly Tag MyTag = new Tag("MyTag");</c>.
      * Tags are stored in a <see cref="System.Collections.Generic.HashSet{T}"/> on
      * the <see cref="MotionContext"/> for O(1) lookups.
      * </remarks>
@@ -17,39 +19,45 @@ namespace DynamicPhysics
     public static class MotionTag
     {
         /** <summary>Character is on a walkable surface.</summary> */
-        public const string Grounded = "Grounded";
+        public static readonly Tag Grounded = new Tag("Grounded");
 
         /** <summary>Character is not grounded.</summary> */
-        public const string Airborne = "Airborne";
-        
+        public static readonly Tag Airborne = new Tag("Airborne");
+
         /** <summary>Character is currently sprinting.</summary> */
-        public const string Sprinting = "Sprinting";
+        public static readonly Tag Sprinting = new Tag("Sprinting");
 
         /** <summary>Character is on a slope exceeding the maximum walkable angle.</summary> */
-        public const string Sliding = "Sliding";
+        public static readonly Tag Sliding = new Tag("Sliding");
 
         /** <summary>Character is in contact with a wall.</summary> */
-        public const string WallContact = "WallContact";
+        public static readonly Tag WallContact = new Tag("WallContact");
 
         /** <summary>Character is attached to a rope and swinging.</summary> */
-        public const string Swinging = "Swinging";
+        public static readonly Tag Swinging = new Tag("Swinging");
 
         /** <summary>Character is actively dashing.</summary> */
-        public const string Dashing = "Dashing";
+        public static readonly Tag Dashing = new Tag("Dashing");
 
         /** <summary>Character is in combat movement mode.</summary> */
-        public const string InCombat = "InCombat";
+        public static readonly Tag InCombat = new Tag("InCombat");
 
         /** <summary>Character is stunned and input should be suppressed.</summary> */
-        public const string Stunned = "Stunned";
+        public static readonly Tag Stunned = new Tag("Stunned");
 
-        /** <summary>Character is performing a slide.</summary> */
-        public const string SlidingCrouch = "SlidingCrouch";
+        /** <summary>Character is performing a sliding crouch.</summary> */
+        public static readonly Tag SlidingCrouch = new Tag("SlidingCrouch");
 
         /** <summary>Character is wall running.</summary> */
-        public const string WallRunning = "WallRunning";
+        public static readonly Tag WallRunning = new Tag("WallRunning");
 
-        /** <summary>Disable automatic rotation based on input direction.</summary> */
-        public const string NoAutoRotate = "NoAutoRotate";
+        /** <summary>Disables automatic rotation based on input direction.</summary> */
+        public static readonly Tag NoAutoRotate = new Tag("NoAutoRotate");
+
+        /** <summary>Character is grabbing a ledge and auto-climbing up.</summary> */
+        public static readonly Tag LedgeGrabbing = new Tag("LedgeGrabbing");
+
+        /** <summary>Character just performed a wall kick (active for one physics tick).</summary> */
+        public static readonly Tag WallKicking = new Tag("WallKicking");
     }
 }

@@ -81,6 +81,14 @@ namespace DynamicPhysics
 
         public void Tick(MotionContext context, float deltaTime)
         {
+            // WallKickAbility owns the full upward arc (tag lives until Vy ≤ 0).
+            // Skip all effects while it's active; mark cut consumed so it can't fire after.
+            if (context.HasTag(MotionTag.WallKicking))
+            {
+                _jumpCutApplied = true;
+                return;
+            }
+
             if (!context.Input.JumpHeld && context.Velocity.y > 0f && !_jumpCutApplied)
             {
                 context.Velocity.y *= Settings.JumpCutMultiplier;
