@@ -253,6 +253,14 @@ namespace DynamicPhysics
             _abilities.Add(ability);
         }
 
+        /** <summary>Returns the first registered ability of type <typeparamref name="T"/>, or null.</summary> */
+        public T GetAbility<T>() where T : class, IMotionAbility
+        {
+            foreach (var a in _abilities)
+                if (a is T t) return t;
+            return null;
+        }
+
         /**
          * <summary>Unregisters an ability by type. Deactivates it first if active.</summary>
          * <typeparam name="T">The ability type to remove.</typeparam>

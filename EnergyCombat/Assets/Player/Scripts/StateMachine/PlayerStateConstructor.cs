@@ -1,4 +1,6 @@
+using DynamicPhysics;
 using StateMachine;
+using UnityEngine;
 
 public class PlayerStateConstructor
 {
@@ -12,11 +14,11 @@ public class PlayerStateConstructor
         _root = new RootState();
         _builder = new StateMachineBuilder<PlayerController>(_root);
     }
-    
+
     public StateMachine<PlayerController> Construct()
     {
         ConstructActiveStates();
-        
+
         var machine = _builder.Build(_host);
         return machine;
     }
@@ -41,6 +43,39 @@ public class PlayerStateConstructor
 
         var jump = new JumpState().AsInitialState(airborne);
         var fall = new FallState().WithParent(airborne);
+
+        // Animation activities — all null-safe; WithActivity(null) is already a no-op
+        var ctrl = _host.AnimationController;
+        var cfg  = ctrl?.Config;
+
+        LoopAnimActivity Anim(StateAnimSet set) =>
+            ctrl != null && set != null ? new LoopAnimActivity(ctrl, set) : null;
+
+        idle.WithActivity(Anim(cfg?.Idle));
+        move.WithActivity(Anim(cfg?.Walk));
+        sprint.WithActivity(Anim(cfg?.Sprint));
+        dash.WithActivity(Anim(cfg?.Dash));
+        jump.WithActivity(Anim(cfg?.Jump));
+        fall.WithActivity(Anim(cfg?.Fall));
+        wallKick.WithActivity(Anim(cfg?.WallKick));
+
+        // WallRun: Func<StateAnimSet> overload resolves L/R side at activation time
+        wallRun.WithActivity(ctrl != null && cfg != null ? new LoopAnimActivity(ctrl, () =>
+        {
+            bool wallOnRight = Vector3.Dot(_host.transform.right, _host.WallNormal) < 0;
+            return wallOnRight ? cfg.WallRunRight : cfg.WallRunLeft;
+        }) : null);
+
+        // Slide: blocking exit, added alongside the existing CameraActivity
+        var slideAnim = ctrl != null && cfg != null
+            ? new SlideAnimationActivity(ctrl, cfg.Slide) : null;
+        slide.WithActivity(slideAnim);
+
+        // LedgeGrab: two-phase hang → climb
+        var ledgeAbility = _host.MotionOrchestrator.GetAbility<LedgeGrabAbility>();
+        var ledgeAnim = ctrl != null && cfg != null
+            ? new LedgeGrabAnimationActivity(ctrl, cfg, ledgeAbility) : null;
+        ledgeGrab.WithActivity(ledgeAnim);
 
         _builder
             .WithState(active)

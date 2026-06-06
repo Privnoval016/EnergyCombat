@@ -20,6 +20,9 @@ public class PlayerController : MonoBehaviour, ILocomotionState
     [Header("Combat")]
     [SerializeField] private CombatController combatController;
 
+    [Header("Animation")]
+    [SerializeField] private PlayerAnimationController _animationController;
+
     private PlayerInputAdapter _playerInputAdapter;
     private MotionInputProviderAdapter _motionInputProvider;
     private bool _jumpPressed;
@@ -31,6 +34,7 @@ public class PlayerController : MonoBehaviour, ILocomotionState
     public MotionOrchestrator MotionOrchestrator => motionOrchestrator;
     public CameraController CameraController => cameraController;
     public CombatController CombatController => combatController;
+    public PlayerAnimationController AnimationController => _animationController;
 
     #endregion
 
@@ -50,6 +54,7 @@ public class PlayerController : MonoBehaviour, ILocomotionState
 
     public bool IsSliding => motionOrchestrator?.IsSlidingCrouch ?? false;
     public bool IsWallRunning => motionOrchestrator?.Context?.HasTag(MotionTag.WallRunning) ?? false;
+    public Vector3 WallNormal => motionOrchestrator?.Context?.WallNormal ?? Vector3.zero;
     public bool IsLedgeGrabbing => motionOrchestrator?.Context?.HasTag(MotionTag.LedgeGrabbing) ?? false;
     public bool IsWallKicking => motionOrchestrator?.Context?.HasTag(MotionTag.WallKicking) ?? false;
 

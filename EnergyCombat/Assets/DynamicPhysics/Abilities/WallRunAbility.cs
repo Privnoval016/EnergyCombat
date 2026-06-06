@@ -64,6 +64,7 @@ namespace DynamicPhysics
             context.SetTag(MotionTag.WallContact);
             context.SetTag(MotionTag.NoAutoRotate);
             context.RemoveTag(MotionTag.Airborne);
+            context.WallNormal = _wallNormal;
             context.Velocity = new Vector3(context.Velocity.x, 0f, context.Velocity.z);
         }
 
@@ -76,6 +77,8 @@ namespace DynamicPhysics
                 Deactivate(context);
                 return;
             }
+
+            context.WallNormal = _wallNormal;
 
             if (_settings.RequireInputToSustain)
             {
@@ -130,6 +133,7 @@ namespace DynamicPhysics
             context.RemoveTag(MotionTag.WallRunning);
             context.RemoveTag(MotionTag.WallContact);
             context.RemoveTag(MotionTag.NoAutoRotate);
+            context.WallNormal = Vector3.zero;
             if (!context.HasTag(MotionTag.Grounded))
                 context.SetTag(MotionTag.Airborne);
         }

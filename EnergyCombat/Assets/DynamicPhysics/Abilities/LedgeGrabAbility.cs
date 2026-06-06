@@ -30,6 +30,7 @@ namespace DynamicPhysics
         private readonly LedgeGrabSettings _settings;
 
         public bool IsActive { get; private set; }
+        public bool IsInClimbPhase => IsActive && _climbPhase == ClimbPhase.Climb;
         private float _phase1Timer;
         private float _phase2Timer;
         private Vector3 _climbForward;

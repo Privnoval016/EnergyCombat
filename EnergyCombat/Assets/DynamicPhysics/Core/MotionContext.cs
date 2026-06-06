@@ -54,6 +54,9 @@ namespace DynamicPhysics
         /** <summary>Angle of the ground surface relative to world up, in degrees.</summary> */
         public float GroundAngle;
 
+        /** <summary>Surface normal of the wall currently being run. Zero when not wall-running.</summary> */
+        public Vector3 WallNormal;
+
         #endregion
 
         #region Physics Parameters
@@ -138,6 +141,7 @@ namespace DynamicPhysics
             GroundNormal = Vector3.zero;
             GroundPoint = Vector3.zero;
             GroundAngle = 0f;
+            WallNormal = Vector3.zero;
             GravityScale = 1f;
             SteeringMultiplier = 1f;
             ControlFactor = 1f;
