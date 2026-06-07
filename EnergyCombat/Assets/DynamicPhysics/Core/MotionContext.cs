@@ -57,6 +57,16 @@ namespace DynamicPhysics
         /** <summary>Surface normal of the wall currently being run. Zero when not wall-running.</summary> */
         public Vector3 WallNormal;
 
+        /**
+         * <summary>
+         * Signed turn direction of the most recent hard-stop momentum reversal.
+         * Positive values indicate a right turn; negative values indicate a left turn.
+         * Only meaningful while <see cref="MotionTag.QuickTurning"/> is active.
+         * Managed by <see cref="InputSteeringStage"/>.
+         * </summary>
+         */
+        public float QuickTurnSign;
+
         #endregion
 
         #region Physics Parameters

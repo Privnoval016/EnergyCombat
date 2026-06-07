@@ -9,6 +9,7 @@ public class SprintState : State<PlayerController>
             if (host.IsAttacking) return host.GetState<AttackingState>();
             if (host.IsSliding) return host.GetState<SlideState>();
             if (host.IsDodging) return host.GetState<DashState>();
+            if (host.IsQuickTurning) return host.GetState<QuickTurnState>();
             if (!host.ShouldSprint)
             {
                 return host.HasDirectionalMoveInput

@@ -14,19 +14,7 @@ public class FallState : State<PlayerController>
 
             if (host.ConsumeJumpPressed()) host.RequestJump();
 
-            if (host.IsGrounded)
-            {
-                if (host.ConsumeLandingBoostPending() && host.ShouldApplyPostBoost())
-                {
-                    host.RequestSprint();
-                    return host.GetState<MoveState>();
-                }
-
-                if (host.IsSliding) return host.GetState<SlideState>();
-                if (host.ShouldSprint) return host.GetState<SprintState>();
-                if (host.HasDirectionalMoveInput) return host.GetState<MoveState>();
-                return host.GetState<IdleState>();
-            }
+            if (host.IsGrounded) return host.GetState<LandState>();
 
             return null;
         }));

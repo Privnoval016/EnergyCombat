@@ -22,6 +22,8 @@ public class PlayerAnimationController : MonoBehaviour
     private void Awake()
     {
         _animancer = GetComponent<AnimancerComponent>();
+        // Prevent Animancer from applying root-motion data to the transform — physics owns movement and rotation.
+        _animancer.Animator.applyRootMotion = false;
         if (_player == null) _player = GetComponent<PlayerController>();
     }
 

@@ -1,20 +1,10 @@
 using StateMachine;
 
-public class AirborneState : State<PlayerController>
-{
-    public AirborneState()
-    {
-        WithTransition(new FuncTransition<PlayerController>((host, _) =>
-        {
-            if (host.IsGrounded)
-            {
-                if (host.IsSliding) return host.GetState<SlideState>();
-                if (host.ShouldSprint) return host.GetState<SprintState>();
-                if (host.HasDirectionalMoveInput) return host.GetState<MoveState>();
-                return host.GetState<IdleState>();
-            }
-
-            return null;
-        }));
-    }
-}
+/**
+ * <summary>
+ * Parent state for all airborne sub-states (<see cref="JumpState"/>, <see cref="FallState"/>).
+ * Does not define its own transitions; grounded-exit transitions are owned by the leaf states
+ * so that landing always routes through <see cref="LandState"/>.
+ * </summary>
+ */
+public class AirborneState : State<PlayerController> { }

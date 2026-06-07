@@ -2,6 +2,13 @@ using DynamicPhysics;
 using StateMachine;
 using UnityEngine;
 
+/**
+ * <summary>
+ * Constructs the player's hierarchical state machine, wires all states, and attaches animation
+ * activities. Looping locomotion states use <see cref="LoopAnimActivity"/>; one-shot states
+ * (jump, fall, land, quick-turn, ledge, wall-kick) use <see cref="OneShotAnimActivity"/>.
+ * </summary>
+ */
 public class PlayerStateConstructor
 {
     private readonly State<PlayerController> _root;
@@ -18,64 +25,79 @@ public class PlayerStateConstructor
     public StateMachine<PlayerController> Construct()
     {
         ConstructActiveStates();
-
-        var machine = _builder.Build(_host);
-        return machine;
+        return _builder.Build(_host);
     }
 
     private void ConstructActiveStates()
     {
+        var ctrl = _host.AnimationController;
+        var cfg  = ctrl?.Config;
+
         var active = new ActiveState().WithParent(_root).AsInitialState(_root);
 
-        var grounded = new GroundedState().AsInitialState(active);
-        var airborne = new AirborneState().WithParent(active);
+        var grounded  = new GroundedState().AsInitialState(active);
+        var airborne  = new AirborneState().WithParent(active);
         var attacking = new AttackingState().WithParent(active);
-        var wallRun = new WallRunState().WithParent(active);
-        var wallKick = new WallKickState().WithParent(active);
+        var wallRun   = new WallRunState().WithParent(active);
+        var wallKick  = new WallKickState().WithParent(active);
         var ledgeGrab = new LedgeGrabState().WithParent(active);
-        var dash = new DashState().WithParent(grounded);
+        var dash      = new DashState().WithParent(grounded);
 
-        var idle = new IdleState().AsInitialState(grounded);
-        var move = new MoveState().WithParent(grounded);
-        var sprint = new SprintState().WithParent(grounded);
-        var slide = new SlideState().WithParent(grounded)
-            .WithActivity(new CameraActivity(_host.CameraController, CamMode.OverRightShoulder, 0.2f));
+        var idle      = new IdleState().AsInitialState(grounded);
+        var move      = new MoveState().WithParent(grounded);
+        var sprint    = new SprintState().WithParent(grounded);
+        var slide     = new SlideState().WithParent(grounded)
+                            .WithActivity(new CameraActivity(_host.CameraController, CamMode.OverRightShoulder, 0.2f));
+        var land      = new LandState(cfg?.LandHoldDuration ?? 0f).WithParent(grounded);
+        var quickTurn = new QuickTurnState().WithParent(grounded);
 
         var jump = new JumpState().AsInitialState(airborne);
         var fall = new FallState().WithParent(airborne);
 
-        // Animation activities — all null-safe; WithActivity(null) is already a no-op
-        var ctrl = _host.AnimationController;
-        var cfg  = ctrl?.Config;
-
-        LoopAnimActivity Anim(StateAnimSet set) =>
-            ctrl != null && set != null ? new LoopAnimActivity(ctrl, set) : null;
-
-        idle.WithActivity(Anim(cfg?.Idle));
-        move.WithActivity(Anim(cfg?.Walk));
-        sprint.WithActivity(Anim(cfg?.Sprint));
-        dash.WithActivity(Anim(cfg?.Dash));
-        jump.WithActivity(Anim(cfg?.Jump));
-        fall.WithActivity(Anim(cfg?.Fall));
-        wallKick.WithActivity(Anim(cfg?.WallKick));
-
-        // WallRun: Func<StateAnimSet> overload resolves L/R side at activation time
-        wallRun.WithActivity(ctrl != null && cfg != null ? new LoopAnimActivity(ctrl, () =>
+        // — Loop states —
+        if (ctrl != null && cfg != null)
         {
-            bool wallOnRight = Vector3.Dot(_host.transform.right, _host.WallNormal) < 0;
-            return wallOnRight ? cfg.WallRunRight : cfg.WallRunLeft;
-        }) : null);
+            idle.WithActivity(new LoopAnimActivity(ctrl, cfg.Idle));
+            move.WithActivity(new LoopAnimActivity(ctrl, cfg.Walk));
+            sprint.WithActivity(new LoopAnimActivity(ctrl, cfg.Sprint));
+            dash.WithActivity(new LoopAnimActivity(ctrl, cfg.Dash));
+            slide.WithActivity(new LoopAnimActivity(ctrl, cfg.Slide));
 
-        // Slide: blocking exit, added alongside the existing CameraActivity
-        var slideAnim = ctrl != null && cfg != null
-            ? new SlideAnimationActivity(ctrl, cfg.Slide) : null;
-        slide.WithActivity(slideAnim);
+            // WallRun: Func<LoopAnimDef> resolves L/R side at activation time
+            wallRun.WithActivity(new LoopAnimActivity(ctrl, () =>
+            {
+                bool wallOnRight = Vector3.Dot(_host.transform.right, _host.WallNormal) < 0;
+                return wallOnRight ? cfg.WallRunRight : cfg.WallRunLeft;
+            }));
+        }
 
-        // LedgeGrab: two-phase hang → climb
+        // — One-shot states —
+        if (ctrl != null && cfg != null)
+        {
+            jump.WithActivity(new OneShotAnimActivity(ctrl, cfg.Jump));
+            fall.WithActivity(new OneShotAnimActivity(ctrl, cfg.Fall));
+            wallKick.WithActivity(new OneShotAnimActivity(ctrl, cfg.WallKick));
+
+            // Landing: velocity-based clip selection at activation time
+            land.WithActivity(new OneShotAnimActivity(ctrl, () =>
+            {
+                Vector3 vel = _host.MotionOrchestrator.Velocity;
+                vel.y = 0f;
+                return vel.magnitude >= cfg.LandMotionSpeedThreshold ? cfg.LandMotion : cfg.LandIdle;
+            }));
+
+            // Quick turn: direction-based clip selection at activation time
+            quickTurn.WithActivity(new OneShotAnimActivity(ctrl,
+                () => _host.QuickTurnSign < 0f ? cfg.QuickTurnLeft : cfg.QuickTurnRight));
+        }
+
+        // — LedgeGrab: two-phase hang → climb —
         var ledgeAbility = _host.MotionOrchestrator.GetAbility<LedgeGrabAbility>();
-        var ledgeAnim = ctrl != null && cfg != null
-            ? new LedgeGrabAnimationActivity(ctrl, cfg, ledgeAbility) : null;
-        ledgeGrab.WithActivity(ledgeAnim);
+        if (ctrl != null && cfg != null)
+        {
+            ledgeGrab.WithActivity(new LedgeGrabAnimationActivity(
+                ctrl, cfg.LedgeGrab, cfg.LedgeClimb, ledgeAbility));
+        }
 
         _builder
             .WithState(active)
@@ -91,6 +113,8 @@ public class PlayerStateConstructor
             .WithState(sprint)
             .WithState(slide)
             .WithState(jump)
-            .WithState(fall);
+            .WithState(fall)
+            .WithState(land)
+            .WithState(quickTurn);
     }
 }

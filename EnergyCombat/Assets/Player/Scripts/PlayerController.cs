@@ -60,6 +60,24 @@ public class PlayerController : MonoBehaviour, ILocomotionState
 
     /**
      * <summary>
+     * <c>true</c> while the physics layer is executing or has recently completed a hard-stop
+     * momentum reversal. Remains active for <see cref="SteeringSettings.QuickTurnHoldDuration"/>
+     * seconds after the physics condition clears so the full turn animation can play.
+     * </summary>
+     */
+    public bool IsQuickTurning => motionOrchestrator?.Context?.HasTag(MotionTag.QuickTurning) ?? false;
+
+    /**
+     * <summary>
+     * Signed direction of the most recent quick turn.
+     * Positive values indicate a right turn; negative values indicate a left turn.
+     * Only meaningful while <see cref="IsQuickTurning"/> is <c>true</c>.
+     * </summary>
+     */
+    public float QuickTurnSign => motionOrchestrator?.Context?.QuickTurnSign ?? 0f;
+
+    /**
+     * <summary>
      * <c>true</c> while <c>CombatController</c> is actively executing an ability pipeline.
      * Used by the state machine to enter and remain in <c>AttackingState</c>.
      * </summary>

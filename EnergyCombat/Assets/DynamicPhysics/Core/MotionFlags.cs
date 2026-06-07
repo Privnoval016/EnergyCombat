@@ -59,5 +59,15 @@ namespace DynamicPhysics
 
         /** <summary>Character just performed a wall kick (active for one physics tick).</summary> */
         public static readonly Tag WallKicking = new Tag("WallKicking");
+
+        /**
+         * <summary>
+         * Character is executing or has recently completed a hard-stop momentum reversal.
+         * The tag is held for a configurable duration after the physics condition clears
+         * so the animation system can play the full turn animation.
+         * See <see cref="SteeringSettings.QuickTurnHoldDuration"/>.
+         * </summary>
+         */
+        public static readonly Tag QuickTurning = new Tag("QuickTurning");
     }
 }

@@ -20,6 +20,9 @@ namespace DynamicPhysics
         /** <summary>Execution priority. Runs first in the pipeline.</summary> */
         public int Priority => InfluencePriority.InputSteering;
 
+        // Seconds remaining before the QuickTurning tag is cleared after hard-stop ends.
+        private float _quickTurnTimer;
+
         /**
          * <summary>
          * Processes input into velocity changes with momentum-based steering.
@@ -62,6 +65,20 @@ namespace DynamicPhysics
 
             context.Velocity.x = horizontalVel.x;
             context.Velocity.z = horizontalVel.z;
+
+            // Manage the QuickTurning tag: decrement the hold timer and set or clear accordingly.
+            // The timer is reset each frame a hard-stop is active, so the tag stays throughout
+            // the momentum reversal and for QuickTurnHoldDuration seconds after it ends.
+            _quickTurnTimer -= dt;
+            if (_quickTurnTimer > 0f)
+            {
+                context.SetTag(MotionTag.QuickTurning);
+            }
+            else
+            {
+                context.RemoveTag(MotionTag.QuickTurning);
+                context.QuickTurnSign = 0f;
+            }
         }
 
         private float GetContextualControl(MotionContext context)
@@ -134,6 +151,9 @@ namespace DynamicPhysics
                     if (angle > steering.HardStopDriftAngleThreshold)
                     {
                         ApplyHardStopDrift(ref horizontalVel, currentDir, inputDir, currentSpeed, targetSpeed, targetAcceleration, steering, dt);
+                        // Record signed turn direction and reset the hold timer so the animation tag persists
+                        context.QuickTurnSign = Vector3.Cross(currentDir, inputDir).y;
+                        _quickTurnTimer = steering.QuickTurnHoldDuration;
                     }
                     else
                     {

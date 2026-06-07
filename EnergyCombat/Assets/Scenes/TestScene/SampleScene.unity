@@ -138,7 +138,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &94998256
 Transform:
   m_ObjectHideFlags: 0
@@ -429,7 +429,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 5000
-  field of view: 60
+  field of view: 40
   orthographic: 0
   orthographic size: 10
   m_Depth: -1
@@ -455,8 +455,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.8, y: 1.86, z: -2}
+  m_LocalRotation: {x: -0.0050093173, y: -0.000000027638592, z: -1.384522e-10, w: 0.9999875}
+  m_LocalPosition: {x: 0.00000012647287, y: 1.1094999, z: -4.152692}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -854,7 +854,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 634414948}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 70fbba6ec8c1944249c10fc71f9b7ef5, type: 3}
   m_Name: 
@@ -1227,8 +1227,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2251760930822488738}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.118177526, y: 0.000000014948757, z: -4.478597e-10, w: 0.9929925}
-  m_LocalPosition: {x: 114.1559, y: 3.6999998, z: -61.96674}
+  m_LocalRotation: {x: -0.0050093164, y: -0.000000027638587, z: -1.3845217e-10, w: 0.9999875}
+  m_LocalPosition: {x: 114.1559, y: 0.10949993, z: -52.91943}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1386,18 +1386,18 @@ MonoBehaviour:
   Radius: 10.21
   Orbits:
     Top:
-      Radius: 14.8
-      Height: 7.62
+      Radius: 4
+      Height: 3
     Center:
-      Radius: 13.2
-      Height: 3.7
+      Radius: 5
+      Height: 2
     Bottom:
-      Radius: 4.49
-      Height: -0.06
+      Radius: 4
+      Height: -0.05
     SplineCurvature: 0.329
   RecenteringTarget: 2
   HorizontalAxis:
-    Value: 0
+    Value: -0.0000017449792
     Center: 0
     Range: {x: -180, y: 180}
     Wrap: 1
@@ -1407,7 +1407,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   VerticalAxis:
-    Value: 0.5
+    Value: 0.049322583
     Center: 0.5
     Range: {x: 0, y: 1}
     Wrap: 0

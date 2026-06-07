@@ -106,6 +106,17 @@ namespace DynamicPhysics
 
         /**
          * <summary>
+         * Duration in seconds that <see cref="MotionTag.QuickTurning"/> remains active after the
+         * hard-stop physics condition clears. Prevents the tag from flickering off mid-animation
+         * when momentum resolves faster than the clip plays.
+         * </summary>
+         */
+        [Tooltip("Seconds the QuickTurning tag lingers after the hard-stop ends, giving the turn animation time to finish.")]
+        [Range(0f, 1f)]
+        public float QuickTurnHoldDuration;
+
+        /**
+         * <summary>
          * Smooth rotation speed when turning to face input direction.
          * Higher values = snappier rotation. Controls how quickly character orients toward movement input.
          * </summary>
@@ -159,6 +170,7 @@ namespace DynamicPhysics
             HardStopDriftMinSpeedRatio = 0.7f,
             HardStopDriftDeceleration = 120f,
             HardStopDriftReaccelerationMultiplier = 1.5f,
+            QuickTurnHoldDuration = 0.25f,
             RotationSpeed = 10f,
             FacingDirectionUpdateSpeed = 20f,
             HardStopSkidWindowSize = 60f,
