@@ -207,7 +207,7 @@ Material:
     - _AOMapEnabled: 0
     - _AOMapStrength: 1
     - _AddPrecomputedVelocity: 0
-    - _AdvancedConfigurationEnabled: 0
+    - _AdvancedConfigurationEnabled: 1
     - _AffectedByLightmaps: 1
     - _AlbedoVertexColorMode: 1
     - _AlbedoVertexColorOn: 0
@@ -245,7 +245,7 @@ Material:
     - _ContrastBrightnessOn: 0
     - _ContrastLM: 1
     - _Cull: 2
-    - _CullingMode: 2
+    - _CullingMode: 0
     - _CustomAmbientLightOn: 1
     - _CustomShadowColorOn: 0
     - _Cutoff: 0.5

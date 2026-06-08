@@ -53,7 +53,7 @@ MonoBehaviour:
         _NormalizedTimes: []
         _Callbacks: []
         _Names: []
-      _Clip: {fileID: 0}
+      _Clip: {fileID: 7400000, guid: 459902363da164f7d992924976554d0a, type: 2}
       _NormalizedStartTime: NaN
     FadeDuration: 0.15
   Sprint:

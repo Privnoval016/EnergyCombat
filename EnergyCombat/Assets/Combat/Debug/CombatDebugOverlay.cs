@@ -44,12 +44,6 @@ namespace Combat
         private GUIStyle _activeTagStyle;
         private bool _stylesInitialized;
 
-        private void Update()
-        {
-            if (UnityEngine.Input.GetKeyDown(ToggleKey))
-                ShowOverlay = !ShowOverlay;
-        }
-
         private void OnGUI()
         {
             if (!ShowOverlay || Target == null) return;

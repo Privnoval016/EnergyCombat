@@ -35,7 +35,7 @@ MonoBehaviour:
     SlideMaxDuration: 0.75
     SlideMinEntrySpeed: 45
   WallRun:
-    WallDetectionDistance: 0.7
+    WallDetectionDistance: 0.8
     WallLayers:
       serializedVersion: 2
       m_Bits: 8
@@ -49,11 +49,11 @@ MonoBehaviour:
     InputSustainAngleThreshold: 70
     ReactivationCooldown: 0.25
   LedgeGrab:
-    DetectionDistance: 0.6
+    DetectionDistance: 0.8
     LedgeLayers:
       serializedVersion: 2
       m_Bits: 8
-    MaxLedgeReach: 2.2
+    MaxLedgeReach: 2
     MinLedgeHeight: 0.8
     GrabHoldTime: 0.15
     ClimbDuration: 0.4

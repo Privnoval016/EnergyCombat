@@ -27,7 +27,7 @@ namespace Combat
                 return handle;
             }
 
-            _currentState = _animancer.Layers[0].Play(request.Clip, request.FadeInDuration);
+            _currentState = _animancer.Layers[request.Layer].Play(request.Clip, request.FadeInDuration);
             _currentState.Speed = request.Speed;
 
             if (request.EventNames != null)

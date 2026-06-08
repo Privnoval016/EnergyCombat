@@ -28,7 +28,7 @@ MonoBehaviour:
     QuickTurnHoldDuration: 0.25
     RotationSpeed: 25
     FacingDirectionUpdateSpeed: 40
-    HardStopSkidWindowSize: 60
+    HardStopSkidWindowSize: 100
   GravityScale: 8
   Friction: 100
   AirControl: 0.103
