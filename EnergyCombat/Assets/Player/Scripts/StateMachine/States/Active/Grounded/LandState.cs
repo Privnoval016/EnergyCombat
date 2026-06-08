@@ -9,16 +9,19 @@ using UnityEngine;
  * </summary>
  *
  * <remarks>
- * Animation selection (idle vs. motion landing) is determined at activity activation time by reading
- * the horizontal velocity magnitude and comparing it to
- * <see cref="PlayerAnimationConfig.LandMotionSpeedThreshold"/>.
+ * Animation selection is state-based, not velocity-based:
+ * <list type="bullet">
+ *   <item><b>Walk landing</b> — no clip plays; routing to <see cref="MoveState"/> is an immediate
+ *     priority exit (not gated by the hold timer).</item>
+ *   <item><b>Idle landing</b> — <see cref="PlayerAnimationConfig.LandIdle"/> plays; hold timer runs.</item>
+ *   <item><b>Sprint landing</b> — <see cref="PlayerAnimationConfig.LandMotion"/> plays; hold timer runs.</item>
+ * </list>
  *
- * Priority exits (landing boost, airborne again, attacking, dodging, sliding) are never blocked
- * by the hold timer. A boost landing consumes the pending flag and skips the hold entirely.
+ * Other priority exits (boost, airborne again, attacking, dodging, sliding) always interrupt the hold.
+ * A boost landing consumes the pending flag and skips the hold entirely.
  *
- * After the hold, sprint is restored when the player was sprinting before the jump — even though
- * <c>IsSprinting</c> is cleared while airborne, the full-throttle check + <see cref="PlayerController.RequestSprint"/>
- * re-arms the sprint toggle so <see cref="SprintState"/> activates immediately.
+ * After the hold, sprint is restored when <see cref="PlayerController.ShouldSprint"/> is true on
+ * landing (sprint toggle was on before the jump).
  * </remarks>
  */
 public class LandState : State<PlayerController>
@@ -51,12 +54,13 @@ public class LandState : State<PlayerController>
             if (host.IsDodging) return host.GetState<DashState>();
             if (host.IsSliding) return host.GetState<SlideState>();
 
-            // Normal routing is gated behind the hold timer
+            // Walking on landing: no custom clip needed, skip the hold and go straight to walk
+            if (host.HasDirectionalMoveInput && !host.ShouldSprint) return host.GetState<MoveState>();
+
+            // Idle and sprint landings are gated behind the hold timer
             if (_timer > 0f) return null;
 
-            // Re-arm sprint if the player was sprinting or is still pushing full throttle —
-            // IsSprinting is cleared while airborne so we must call RequestSprint() explicitly here.
-            if (host.ShouldSprint || host.IsFullThrottleMove)
+            if (host.ShouldSprint)
             {
                 host.RequestSprint();
                 return host.GetState<SprintState>();

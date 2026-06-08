@@ -69,5 +69,14 @@ namespace DynamicPhysics
          * </summary>
          */
         public static readonly Tag QuickTurning = new Tag("QuickTurning");
+
+        /**
+         * <summary>
+         * Character is playing a walk-start enter animation. Directional steering acceleration
+         * is suppressed (contextual control = 0) so the character stays stationary until the
+         * enter clip finishes and the loop begins.
+         * </summary>
+         */
+        public static readonly Tag WalkStarting = new Tag("WalkStarting");
     }
 }

@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: PlayerMovement
   m_EditorClassIdentifier: Assembly-CSharp::DynamicPhysics.MovementProfile
   Steering:
-    MaxSpeed: 10
+    MaxSpeed: 5
     Acceleration: 60
     Deceleration: 200
     MaxTurnRate: 720
-    SprintSpeed: 48
+    SprintSpeed: 25
     SprintAcceleration: 500
     HighSpeedControl: 0.4
     LowSpeedControl: 1

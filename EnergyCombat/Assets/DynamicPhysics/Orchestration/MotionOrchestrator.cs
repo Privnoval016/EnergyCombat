@@ -409,6 +409,9 @@ namespace DynamicPhysics
 
         private void ApplyRotation(MotionContext context, SteeringSettings steering)
         {
+            // Freeze rotation during quick turns; snap occurs on turn completion via SnapToDesiredFacing
+            if (context.HasTag(MotionTag.QuickTurning)) return;
+
             // Skip if no desired facing direction is set
             if (context.DesiredFacingDirection.sqrMagnitude < 0.01f)
                 return;
@@ -422,6 +425,19 @@ namespace DynamicPhysics
             Quaternion newRotation = Quaternion.Lerp(currentRotation, targetRotation, steering.RotationSpeed * context.DeltaTime);
 
             _rigidbody.rotation = newRotation;
+        }
+
+        /**
+         * <summary>
+         * Instantly sets the rigidbody rotation to face <see cref="MotionContext.DesiredFacingDirection"/>,
+         * bypassing Lerp smoothing. Used by the quick-turn system to snap orientation to the correct
+         * facing direction after the turn animation completes.
+         * </summary>
+         */
+        public void SnapToDesiredFacing()
+        {
+            if (Context.DesiredFacingDirection.sqrMagnitude < 0.01f) return;
+            _rigidbody.rotation = Quaternion.LookRotation(Context.DesiredFacingDirection, Vector3.up);
         }
 
         #endregion

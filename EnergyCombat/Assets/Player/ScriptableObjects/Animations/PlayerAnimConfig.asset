@@ -33,11 +33,11 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 0}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   Walk:
     Enter:
-      _FadeDuration: 0.25
-      _Speed: 1
+      _FadeDuration: 0.15
+      _Speed: 2
       _Events:
         _NormalizedTimes: []
         _Callbacks: []
@@ -47,18 +47,18 @@ MonoBehaviour:
     Loop:
       rid: 6570460646522224862
     Exit:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
         _Callbacks: []
         _Names: []
-      _Clip: {fileID: 7400000, guid: 459902363da164f7d992924976554d0a, type: 2}
+      _Clip: {fileID: 0}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   Sprint:
     Enter:
-      _FadeDuration: 0.25
+      _FadeDuration: 0
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -69,7 +69,7 @@ MonoBehaviour:
     Loop:
       rid: 6570460646522224864
     Exit:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -77,7 +77,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: dfa72b3f302f94770ba1076a2381bf65, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   Dash:
     Enter:
       _FadeDuration: 0.25
@@ -86,7 +86,7 @@ MonoBehaviour:
         _NormalizedTimes: []
         _Callbacks: []
         _Names: []
-      _Clip: {fileID: 7400000, guid: 3d397a63e28c94c25af0664d5b45f91d, type: 2}
+      _Clip: {fileID: 0}
       _NormalizedStartTime: NaN
     Loop:
       rid: 6570460646522224867
@@ -99,10 +99,10 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 0}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   Slide:
     Enter:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -113,7 +113,7 @@ MonoBehaviour:
     Loop:
       rid: 6570460646522224866
     Exit:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -121,10 +121,14 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 2c305d1dfd3664a6ba62379eb5138b62, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
+  WalkIdleGracePeriod: 0.15
+  WalkEnterSkipWindow: 1
+  SprintIdleGracePeriod: 0.1
+  SprintEnterSkipWindow: 0.5
   Jump:
     Clip:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -135,7 +139,7 @@ MonoBehaviour:
     FadeDuration: 0.15
   Fall:
     Clip:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -146,7 +150,7 @@ MonoBehaviour:
     FadeDuration: 0.15
   LandIdle:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -154,10 +158,10 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 4f854b91fc8d140fab7b3ba36b4626e2, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   LandMotion:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -165,7 +169,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: ace21f2982e5f40beb4e2fd69e9b097b, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   LandMotionSpeedThreshold: 3
   LandHoldDuration: 0
   WallRunLeft:
@@ -181,7 +185,7 @@ MonoBehaviour:
     Loop:
       rid: 6570460646522224963
     Exit:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -189,7 +193,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 70bb253dcd08a40d4a08d97219591830, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   WallRunRight:
     Enter:
       _FadeDuration: 0.25
@@ -203,7 +207,7 @@ MonoBehaviour:
     Loop:
       rid: 6570460646522224964
     Exit:
-      _FadeDuration: 0.01
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -211,7 +215,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: c05241c600dca4e70b824d58c1e3e0ba, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   WallKick:
     Clip:
       _FadeDuration: 0.25
@@ -225,7 +229,7 @@ MonoBehaviour:
     FadeDuration: 0.15
   LedgeGrab:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -233,10 +237,10 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 0edd8634ba0f04f2aad7ea443feecab0, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   LedgeClimb:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -244,10 +248,10 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: bfb31e0fdfc124fab85a1ba54200e7e4, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   QuickTurnLeft:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -255,10 +259,10 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 947682df0e48f4b5bbe3b978a94895bc, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   QuickTurnRight:
     Clip:
-      _FadeDuration: 0.25
+      _FadeDuration: 0.15
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -266,7 +270,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: 7d23e22aa119e432ca71b326c8603e67, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.05
+    FadeDuration: 0.15
   references:
     version: 2
     RefIds:
@@ -274,7 +278,7 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
@@ -286,7 +290,7 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.25
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
@@ -298,7 +302,7 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
@@ -310,7 +314,7 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
@@ -322,19 +326,19 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
             _Callbacks: []
             _Names: []
-          _Clip: {fileID: 7400000, guid: 3d397a63e28c94c25af0664d5b45f91d, type: 2}
+          _Clip: {fileID: 0}
           _NormalizedStartTime: NaN
     - rid: 6570460646522224963
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []
@@ -346,7 +350,7 @@ MonoBehaviour:
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}
       data:
         Clip:
-          _FadeDuration: 0.01
+          _FadeDuration: 0.15
           _Speed: 1
           _Events:
             _NormalizedTimes: []

@@ -17,6 +17,28 @@ public class PlayerAnimationConfig : ScriptableObject
     public LoopAnimDef Dash;
     public LoopAnimDef Slide;
 
+    [Header("Walk Transition Timing")]
+    [Tooltip("Seconds of no directional input required before the walk exit animation triggers. " +
+             "Prevents the exit clip from firing during rapid direction changes.")]
+    [Range(0f, 0.5f)]
+    public float WalkIdleGracePeriod = 0.15f;
+
+    [Tooltip("If the player re-enters walk within this many seconds of last leaving it, " +
+             "the walk-enter animation is skipped and the loop resumes immediately.")]
+    [Range(0f, 1f)]
+    public float WalkEnterSkipWindow = 0.35f;
+
+    [Header("Sprint Transition Timing")]
+    [Tooltip("Seconds of sustained !ShouldSprint before transitioning out of sprint. " +
+             "Prevents the exit clip from firing during rapid direction changes while sprinting.")]
+    [Range(0f, 0.5f)]
+    public float SprintIdleGracePeriod = 0.1f;
+
+    [Tooltip("If MoveState exited within this many seconds, the sprint-enter animation is skipped. " +
+             "Prevents a deceleration-style enter clip from playing when transitioning directly from walk.")]
+    [Range(0f, 1f)]
+    public float SprintEnterSkipWindow = 0.5f;
+
     [Header("Airborne — One Shot")]
     public OneShotAnimDef Jump;
     public OneShotAnimDef Fall;

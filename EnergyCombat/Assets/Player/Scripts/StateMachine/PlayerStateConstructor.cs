@@ -44,11 +44,16 @@ public class PlayerStateConstructor
         var dash      = new DashState().WithParent(grounded);
 
         var idle      = new IdleState().AsInitialState(grounded);
-        var move      = new MoveState().WithParent(grounded);
+        var moveState = new MoveState();
+        var move      = moveState.WithParent(grounded);
         var sprint    = new SprintState().WithParent(grounded);
         var slide     = new SlideState().WithParent(grounded)
                             .WithActivity(new CameraActivity(_host.CameraController, CamMode.OverRightShoulder, 0.2f));
-        var land      = new LandState(cfg?.LandHoldDuration ?? 0f).WithParent(grounded);
+        static float ClipLen(OneShotAnimDef def) => def?.IsValid == true ? def.Clip.Clip.length : 0f;
+        float landHold = cfg?.LandHoldDuration > 0f
+            ? cfg.LandHoldDuration
+            : Mathf.Max(ClipLen(cfg?.LandIdle), ClipLen(cfg?.LandMotion));
+        var land      = new LandState(landHold).WithParent(grounded);
         var quickTurn = new QuickTurnState().WithParent(grounded);
 
         var jump = new JumpState().AsInitialState(airborne);
@@ -58,8 +63,12 @@ public class PlayerStateConstructor
         if (ctrl != null && cfg != null)
         {
             idle.WithActivity(new LoopAnimActivity(ctrl, cfg.Idle));
-            move.WithActivity(new LoopAnimActivity(ctrl, cfg.Walk));
-            sprint.WithActivity(new LoopAnimActivity(ctrl, cfg.Sprint));
+            move.WithActivity(new LoopAnimActivity(ctrl, cfg.Walk,
+                onEnterStart: () => _host.MotionOrchestrator.Context.SetTag(MotionTag.WalkStarting),
+                onEnterEnd:   () => _host.MotionOrchestrator.Context.RemoveTag(MotionTag.WalkStarting),
+                skipEnter:    () => moveState.TimeSinceExit < cfg.WalkEnterSkipWindow));
+            sprint.WithActivity(new LoopAnimActivity(ctrl, cfg.Sprint,
+                skipEnter: () => moveState.TimeSinceExit < cfg.SprintEnterSkipWindow));
             dash.WithActivity(new LoopAnimActivity(ctrl, cfg.Dash));
             slide.WithActivity(new LoopAnimActivity(ctrl, cfg.Slide));
 
@@ -78,17 +87,17 @@ public class PlayerStateConstructor
             fall.WithActivity(new OneShotAnimActivity(ctrl, cfg.Fall));
             wallKick.WithActivity(new OneShotAnimActivity(ctrl, cfg.WallKick));
 
-            // Landing: velocity-based clip selection at activation time
+            // Landing: state-based clip selection — sprint→LandMotion, idle→LandIdle, walk→null (no clip)
             land.WithActivity(new OneShotAnimActivity(ctrl, () =>
             {
-                Vector3 vel = _host.MotionOrchestrator.Velocity;
-                vel.y = 0f;
-                return vel.magnitude >= cfg.LandMotionSpeedThreshold ? cfg.LandMotion : cfg.LandIdle;
+                if (_host.ShouldSprint)             return cfg.LandMotion;
+                if (!_host.HasDirectionalMoveInput) return cfg.LandIdle;
+                return null;
             }));
 
-            // Quick turn: direction-based clip selection at activation time
-            quickTurn.WithActivity(new OneShotAnimActivity(ctrl,
-                () => _host.QuickTurnSign < 0f ? cfg.QuickTurnLeft : cfg.QuickTurnRight));
+            // Quick turn: direction-based clip selection at activation time; snaps rotation on exit
+            quickTurn.WithActivity(new QuickTurnAnimationActivity(ctrl,
+                () => _host.QuickTurnSign < 0f ? cfg.QuickTurnLeft : cfg.QuickTurnRight, _host));
         }
 
         // — LedgeGrab: two-phase hang → climb —
@@ -98,6 +107,9 @@ public class PlayerStateConstructor
             ledgeGrab.WithActivity(new LedgeGrabAnimationActivity(
                 ctrl, cfg.LedgeGrab, cfg.LedgeClimb, ledgeAbility));
         }
+
+        // Airborne and immediate-action states suppress exit clips — transitions to these should be instant
+        _builder.WithExitSkipPolicy((from, to) => to == jump || to == fall || to == dash || to == sprint || to == slide);
 
         _builder
             .WithState(active)

@@ -21,6 +21,18 @@ using StateMachine;
  * deceleration/stop animations play in full before the next state begins. The
  * <see cref="TransitionSequencer{T}"/> runs <c>InternalTick</c> during Phase 1, so a new input
  * (jump, dodge) will interrupt the exit mid-clip and cancel this task via the token.
+ *
+ * <b>Enter-phase callbacks:</b> optional <c>onEnterStart</c> and <c>onEnterEnd</c> actions fire
+ * at the beginning and end of the enter clip. Use these to set/clear motion tags (e.g.
+ * <c>MotionTag.WalkStarting</c>) that suppress physics acceleration while the enter animation plays.
+ * Both callbacks are no-ops when not provided, and <c>onEnterEnd</c> is idempotent-safe to call
+ * multiple times (e.g. once via <c>OnEnd</c> and once via <see cref="DeactivateAsync"/> on interrupt).
+ *
+ * <b>Rapid re-entry guard:</b> optional <c>skipEnter</c> predicate. When it returns <c>true</c>
+ * at activation time, the enter clip is bypassed and the loop starts immediately. Neither
+ * <c>onEnterStart</c> nor <c>onEnterEnd</c> fires when the enter is skipped. Intended for
+ * suppressing the walk-start animation when the player re-enters the walk state shortly after
+ * leaving it (e.g. rapid idle↔walk toggling).
  * </remarks>
  */
 public class LoopAnimActivity : AnimationActivityBase
@@ -29,15 +41,24 @@ public class LoopAnimActivity : AnimationActivityBase
 
     private AnimancerState _enterState;
 
+    private readonly Action _onEnterStart;
+    private readonly Action _onEnterEnd;
+    private readonly Func<bool> _skipEnter;
+
     /** <summary>Static overload: always uses the same def.</summary> */
-    public LoopAnimActivity(PlayerAnimationController ctrl, LoopAnimDef def)
-        : this(ctrl, () => def) { }
+    public LoopAnimActivity(PlayerAnimationController ctrl, LoopAnimDef def,
+        Action onEnterStart = null, Action onEnterEnd = null, Func<bool> skipEnter = null)
+        : this(ctrl, () => def, onEnterStart, onEnterEnd, skipEnter) { }
 
     /** <summary>Dynamic overload: def is evaluated at activation time (e.g. WallRun L/R selection).</summary> */
-    public LoopAnimActivity(PlayerAnimationController ctrl, Func<LoopAnimDef> getDef)
+    public LoopAnimActivity(PlayerAnimationController ctrl, Func<LoopAnimDef> getDef,
+        Action onEnterStart = null, Action onEnterEnd = null, Func<bool> skipEnter = null)
         : base(ctrl)
     {
-        GetDef = getDef;
+        GetDef        = getDef;
+        _onEnterStart = onEnterStart;
+        _onEnterEnd   = onEnterEnd;
+        _skipEnter    = skipEnter;
     }
 
     /** <inheritdoc />
@@ -59,23 +80,54 @@ public class LoopAnimActivity : AnimationActivityBase
 
         if (def.HasEnter && def.HasLoop)
         {
-            _enterState = layer.Play(def.Enter, def.FadeDuration);
-            if (_enterState != null)
+            if (_skipEnter?.Invoke() == true)
             {
-                _enterState.OwnedEvents.OnEnd = () =>
+                // Rapid re-entry: bypass enter clip and start the loop immediately
+                var loopState = def.Loop.Play(layer, def.FadeDuration);
+                Ctrl.SetActiveMixer(loopState as Vector2MixerState);
+            }
+            else
+            {
+                _onEnterStart?.Invoke();
+                _enterState = layer.Play(def.Enter, def.FadeDuration);
+                if (_enterState != null)
                 {
-                    _enterState.OwnedEvents.OnEnd = null;
-                    if (Mode == ActivityMode.Active)
+                    _enterState.OwnedEvents.OnEnd = () =>
                     {
-                        var loopState = def.Loop.Play(layer, def.FadeDuration);
-                        Ctrl.SetActiveMixer(loopState as Vector2MixerState);
-                    }
-                };
+                        _enterState.OwnedEvents.OnEnd = null;
+                        _onEnterEnd?.Invoke();
+                        if (Mode == ActivityMode.Active)
+                        {
+                            var loopState = def.Loop.Play(layer, def.FadeDuration);
+                            Ctrl.SetActiveMixer(loopState as Vector2MixerState);
+                        }
+                    };
+                }
+                else
+                {
+                    _onEnterEnd?.Invoke(); // Play() returned null; clear tag immediately
+                }
             }
         }
         else if (def.HasEnter)
         {
-            _enterState = layer.Play(def.Enter, def.FadeDuration);
+            if (_skipEnter?.Invoke() != true)
+            {
+                _onEnterStart?.Invoke();
+                _enterState = layer.Play(def.Enter, def.FadeDuration);
+                if (_enterState != null)
+                {
+                    _enterState.OwnedEvents.OnEnd = () =>
+                    {
+                        _enterState.OwnedEvents.OnEnd = null;
+                        _onEnterEnd?.Invoke();
+                    };
+                }
+                else
+                {
+                    _onEnterEnd?.Invoke();
+                }
+            }
         }
         else if (def.HasLoop)
         {
@@ -104,17 +156,17 @@ public class LoopAnimActivity : AnimationActivityBase
         {
             _enterState.OwnedEvents.OnEnd = null;
             _enterState = null;
+            _onEnterEnd?.Invoke(); // clears motion tag if enter clip was cut short; idempotent
         }
 
         var def = GetDef();
         Ctrl.ClearActiveMixer();
 
-        try
+        if (!token.IsCancellationRequested && def?.HasExit == true)
         {
-            if (def?.HasExit == true)
-                await PlayAndAwaitAsync(def.Exit, def.FadeDuration, token);
+            try { await PlayAndAwaitAsync(def.Exit, def.FadeDuration, token); }
+            catch (OperationCanceledException) { }
         }
-        catch (OperationCanceledException) { }
 
         Mode = ActivityMode.Inactive;
     }

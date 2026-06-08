@@ -20,7 +20,9 @@ public class GroundedState : State<PlayerController>
                 return host.GetState<JumpState>();
             }
 
-            if (host.ConsumeSprintPressed())
+            // Only consume the sprint press when the player is already moving; otherwise leave it
+            // unconsumed so it fires automatically the moment directional input is detected.
+            if (host.HasDirectionalMoveInput && host.ConsumeSprintPressed())
             {
                 host.RequestSprint();
                 return host.GetState<SprintState>();
