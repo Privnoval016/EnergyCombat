@@ -108,8 +108,12 @@ public class PlayerStateConstructor
                 ctrl, cfg.LedgeGrab, cfg.LedgeClimb, ledgeAbility));
         }
 
-        // Airborne and immediate-action states suppress exit clips — transitions to these should be instant
-        _builder.WithExitSkipPolicy((from, to) => to == jump || to == fall || to == dash || to == sprint || to == slide);
+        // Airborne and immediate-action states suppress exit clips — transitions to these should be instant.
+        // QuickTurn is included because its tag has a limited lifetime: if the exit clip of the source
+        // state plays during Phase 1, InternalTick can fire and clear IsQuickTurning before the enter
+        // phase starts, causing the QuickTurnAnimationActivity to be skipped entirely.
+        _builder.WithExitSkipPolicy((from, to) =>
+            to == jump || to == fall || to == dash || to == sprint || to == slide || to == quickTurn);
 
         _builder
             .WithState(active)
