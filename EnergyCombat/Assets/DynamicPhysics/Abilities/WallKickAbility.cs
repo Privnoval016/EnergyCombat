@@ -14,7 +14,17 @@ namespace DynamicPhysics
      * request, so this ability receives the unconsumed request and fires uniformly.
      *
      * Impulse calculation uses the correct effective gravity (Physics.gravity.y × GravityScale)
-     * so KickHeight is a true world-space metre value matching JumpHeight.
+     * so KickHeight is a true world-space metre value matching JumpHeight. All pre-kick
+     * horizontal velocity is stripped so the outward impulse is clean and perpendicular to the
+     * wall — this enables reliable wall-to-wall bouncing regardless of approach speed.
+     *
+     * Every kick uses the same height and outward speed regardless of which wall is kicked or
+     * how many times the same wall has been kicked — consistent feel at all times.
+     *
+     * <see cref="KickSign"/> is set at activation time (+1 = wall to the right, -1 = left).
+     * <see cref="IsWallRunExit"/> is set when the kick was triggered by jumping out of a wall run,
+     * so the animation layer can choose the wall-run-exit clip instead of the standalone-kick clip.
+     * Both are read by the state constructor for animation selection.
      *
      * Arc management: the WallKicking tag and IsActive live for the full upward arc
      * (until Vy ≤ 0 or grounded). This means:
@@ -31,8 +41,16 @@ namespace DynamicPhysics
         private readonly MovementProfile _profile;
 
         public bool IsActive { get; private set; }
-        private Vector3 _lastKickNormal;
-        private bool _hasKicked;
+
+        /** <summary>+1 if the kicked wall was to the character's right, -1 if left. Set at activation time.</summary> */
+        public float KickSign { get; private set; }
+
+        /** <summary>True if this kick was triggered by jumping out of a wall run; false for standalone kicks.</summary> */
+        public bool IsWallRunExit { get; private set; }
+
+        // Time at which the most recent wall-run-exit jump signal was detected.
+        // A kick is treated as a wall-run exit if it fires within the cooldown window of this time.
+        private float _wallRunExitTime = float.NegativeInfinity;
         private float _lastKickTime;
         private Vector3 _kickWallNormal;
         private float _lastGroundedTime = float.NegativeInfinity;
@@ -54,6 +72,15 @@ namespace DynamicPhysics
             if (context.HasTag(MotionTag.Grounded))
                 _lastGroundedTime = Time.time;
 
+            // Record the time of the wall-run-exit signal and clear the tag.
+            // Using a timestamp (not a bool) means the signal survives multiple CanActivate calls —
+            // if cooldown delays the kick by a tick or two, IsWallRunExit is still set correctly.
+            if (context.HasTag(MotionTag.WallRunJump))
+            {
+                _wallRunExitTime = Time.time;
+                context.RemoveTag(MotionTag.WallRunJump);
+            }
+
             if (!context.HasTag(MotionTag.Airborne)) return false;
             if (context.HasTag(MotionTag.Dashing)) return false;
             if (Time.time - _lastKickTime < _settings.KickCooldown) return false;
@@ -69,41 +96,30 @@ namespace DynamicPhysics
 
         public void Activate(MotionContext context)
         {
-            bool isSameWall = _hasKicked &&
-                Vector3.Dot(_kickWallNormal, _lastKickNormal) >
-                Mathf.Cos(_settings.SameWallAngleThreshold * Mathf.Deg2Rad);
-
-            float effectiveHeight = isSameWall
-                ? _settings.KickHeight * _settings.SameWallHeightScale
-                : _settings.KickHeight;
-
             // Use effective gravity (Physics.gravity × profile scale) so KickHeight is a
             // true world-space metre value — same convention as JumpAbility.
             float g = Mathf.Abs(Physics.gravity.y) * _profile.GravityScale;
-            float vy, vOut;
+            float effectiveHeight = Mathf.Max(_settings.KickHeight, 0.001f);
+            float vy = Mathf.Sqrt(2f * g * effectiveHeight);
 
-            if (effectiveHeight >= 0f)
-            {
-                vy = Mathf.Sqrt(2f * g * Mathf.Max(effectiveHeight, 0.001f));
-                float tApex = vy / g;
-                vOut = _settings.KickOutDistance / tApex;
-            }
-            else
-            {
-                vy = -Mathf.Sqrt(2f * g * Mathf.Abs(effectiveHeight));
-                float tLand = Mathf.Sqrt(2f * Mathf.Abs(effectiveHeight) / g);
-                vOut = _settings.KickOutDistance / Mathf.Max(tLand, 0.1f);
-            }
+            // tApex from the full arc so KickOutDistance is always honoured.
+            float tApex = Mathf.Sqrt(2f * effectiveHeight / g);
+            float vOut  = _settings.KickOutDistance / tApex;
 
-            // Preserve velocity running along the wall, discard any into-wall component,
-            // then apply the outward kick and vertical impulse.
-            Vector3 hVel = new Vector3(context.Velocity.x, 0f, context.Velocity.z);
-            Vector3 wallParallel = hVel - _kickWallNormal * Vector3.Dot(hVel, _kickWallNormal);
-            context.Velocity = wallParallel + _kickWallNormal * vOut;
-            context.Velocity.y = vy;
+            // Wall is to the right when the direction toward it (−normal) aligns with character right.
+            Vector3 charRight = Vector3.Cross(Vector3.up, context.CharacterTransform.forward);
+            KickSign = Mathf.Sign(Vector3.Dot(charRight, -_kickWallNormal));
 
-            _lastKickNormal = _kickWallNormal;
-            _hasKicked = true;
+            // Wall-run exit if the signal arrived within the cooldown window of this activation.
+            IsWallRunExit = Time.time - _wallRunExitTime <= _settings.KickCooldown + 0.1f;
+
+            // Strip all pre-kick horizontal velocity — clean perpendicular impulse for wall-to-wall bouncing.
+            context.Velocity = new Vector3(
+                _kickWallNormal.x * vOut,
+                vy,
+                _kickWallNormal.z * vOut
+            );
+
             _lastKickTime = Time.time;
             _cutApplied = false;
             IsActive = true;

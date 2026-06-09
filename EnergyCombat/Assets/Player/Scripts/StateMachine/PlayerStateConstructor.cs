@@ -80,12 +80,28 @@ public class PlayerStateConstructor
             }));
         }
 
+        // — Ability references for activity lambdas —
+        var wkAbility    = _host.MotionOrchestrator.GetAbility<WallKickAbility>();
+        var ledgeAbility = _host.MotionOrchestrator.GetAbility<LedgeGrabAbility>();
+
         // — One-shot states —
         if (ctrl != null && cfg != null)
         {
             jump.WithActivity(new OneShotAnimActivity(ctrl, cfg.Jump));
             fall.WithActivity(new OneShotAnimActivity(ctrl, cfg.Fall));
-            wallKick.WithActivity(new OneShotAnimActivity(ctrl, cfg.WallKick));
+            // Wall kick animation selection:
+            //   Wall-run exit  → WallKickRight / WallKickLeft based on wall side (falls back to WallKick → Jump)
+            //   Standalone kick → WallKick (falls back to Jump)
+            wallKick.WithActivity(new OneShotAnimActivity(ctrl, () =>
+            {
+                if (wkAbility?.IsWallRunExit == true)
+                {
+                    OneShotAnimDef sided = wkAbility.KickSign >= 0f ? cfg.WallKickRight : cfg.WallKickLeft;
+                    if (sided?.IsValid == true) return sided;
+                }
+                if (cfg.WallKick?.IsValid == true) return cfg.WallKick;
+                return cfg.Jump;
+            }));
 
             // Landing: state-based clip selection — sprint→LandMotion, idle→LandIdle, walk→null (no clip)
             land.WithActivity(new OneShotAnimActivity(ctrl, () =>
@@ -101,7 +117,6 @@ public class PlayerStateConstructor
         }
 
         // — LedgeGrab: two-phase hang → climb —
-        var ledgeAbility = _host.MotionOrchestrator.GetAbility<LedgeGrabAbility>();
         if (ctrl != null && cfg != null)
         {
             ledgeGrab.WithActivity(new LedgeGrabAnimationActivity(

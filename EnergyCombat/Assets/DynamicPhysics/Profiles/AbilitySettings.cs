@@ -200,9 +200,9 @@ namespace DynamicPhysics
         [Tooltip("Horizontal distance (metres) from the wall at the kick apex.")]
         public float KickOutDistance = 2.5f;
 
-        [Tooltip("Height scale when kicking the SAME wall. Negative = lose altitude. 0 = neutral. Positive = reduced upward kick.")]
-        [Range(-1f, 1f)]
-        public float SameWallHeightScale = -0.3f;
+        [Tooltip("Height multiplier applied to KickHeight when re-kicking the same wall. 0 = no upward kick; 1 = full height. Clamped to [0, 1] in code — same-wall kicks never send the character downward.")]
+        [Range(0f, 1f)]
+        public float SameWallHeightScale = 0.3f;
 
         [Tooltip("Wall normals within this angle of the last kick are considered the same wall.")]
         [Range(0f, 90f)]

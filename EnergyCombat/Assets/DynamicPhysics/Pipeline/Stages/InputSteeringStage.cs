@@ -37,6 +37,19 @@ namespace DynamicPhysics
             // Suppress input when stunned
             if (context.HasTag(MotionTag.Stunned)) return;
 
+            // During a wall kick the trajectory is fully physics-driven — steering would add or remove
+            // horizontal speed each frame, causing the arc to diverge from the KickOutDistance target.
+            if (context.HasTag(MotionTag.WallKicking))
+            {
+                _quickTurnTimer -= dt;
+                if (_quickTurnTimer <= 0f)
+                {
+                    context.RemoveTag(MotionTag.QuickTurning);
+                    context.QuickTurnSign = 0f;
+                }
+                return;
+            }
+
             // Extract state
             float contextualControl = GetContextualControl(context);
             float targetSpeed = GetTargetSpeed(context, steering);

@@ -29,7 +29,9 @@ namespace DynamicPhysics
         /**
          * <summary>
          * On a Jump request during wall run, ends the wall run without consuming the request.
-         * WallKickAbility (registered after this) handles the actual kick impulse uniformly.
+         * Sets <see cref="MotionTag.WallRunJump"/> for one tick so <see cref="WallKickAbility"/>
+         * can identify the activation as a wall-run exit and play the correct animation.
+         * WallKickAbility (registered after this) handles the kick impulse uniformly.
          * </summary>
          */
         public bool TryConsumeRequest(MotionContext context, MotionRequest request)
@@ -37,6 +39,7 @@ namespace DynamicPhysics
             if (!IsActive) return false;
             if (request.Type != MotionRequestType.Jump) return false;
             Deactivate(context);
+            context.SetTag(MotionTag.WallRunJump); // read and cleared by WallKickAbility.CanActivate
             return false; // pass the request through so WallKickAbility can handle it
         }
 

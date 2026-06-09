@@ -56,7 +56,12 @@ public class PlayerAnimationConfig : ScriptableObject
     [Header("Wall — Mixed")]
     public LoopAnimDef WallRunLeft;
     public LoopAnimDef WallRunRight;
+    [Tooltip("Standalone wall kick (airborne, not from a wall run). Falls back to Jump if unassigned.")]
     public OneShotAnimDef WallKick;
+    [Tooltip("Jump off the left side of a wall run. Falls back to WallKick, then Jump if unassigned.")]
+    public OneShotAnimDef WallKickLeft;
+    [Tooltip("Jump off the right side of a wall run. Falls back to WallKick, then Jump if unassigned.")]
+    public OneShotAnimDef WallKickRight;
 
     [Header("Ledge — One Shot")]
     public OneShotAnimDef LedgeGrab;

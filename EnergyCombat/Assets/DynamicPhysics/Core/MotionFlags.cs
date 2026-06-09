@@ -78,5 +78,14 @@ namespace DynamicPhysics
          * </summary>
          */
         public static readonly Tag WalkStarting = new Tag("WalkStarting");
+
+        /**
+         * <summary>
+         * Set by <see cref="WallRunAbility"/> for one physics tick when a Jump request ends the
+         * wall run. <see cref="WallKickAbility"/> reads and clears this in <c>CanActivate</c> so
+         * it can select the correct wall-run-exit animation instead of the standalone-kick clip.
+         * </summary>
+         */
+        public static readonly Tag WallRunJump = new Tag("WallRunJump");
     }
 }
