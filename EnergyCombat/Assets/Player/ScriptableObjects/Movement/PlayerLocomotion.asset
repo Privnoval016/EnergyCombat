@@ -62,7 +62,7 @@ MonoBehaviour:
     ClimbClearanceAbove: 0.5
     ClimbClearanceForward: 0.8
     MaxEntryUpwardVelocity: 2
-    DetectionChestHeight: 1.4
+    DetectionChestHeight: 1
     WallSearchArcAngle: 85
     MomentumPreservationRatio: 0.7
   WallKick:
@@ -71,10 +71,10 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 8
     MinWallAngle: 30
-    KickHeight: 55
-    KickOutDistance: 55
-    SameWallHeightScale: -0.3
-    SameWallAngleThreshold: 80
+    KickHeight: 8
+    KickOutDistance: 8
+    SameWallHeightScale: 0
+    SameWallAngleThreshold: 0
     KickCooldown: 0.3
     MinAirborneTime: 0.05
   PostStateBoost:

@@ -86,6 +86,8 @@ public class LedgeGrabAnimationActivity : AnimationActivityBase
         var state = Ctrl.GetLayer(0).Play(_climb.Clip, _climb.FadeDuration);
         if (state != null)
             state.OwnedEvents.OnEnd = () => _climbTcs.TrySetResult(true);
+        else
+            _climbTcs.TrySetResult(true); // no clip played; resolve immediately so DeactivateAsync is not blocked
 
         try
         {

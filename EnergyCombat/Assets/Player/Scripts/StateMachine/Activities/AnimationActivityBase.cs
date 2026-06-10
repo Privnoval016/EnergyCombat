@@ -32,10 +32,15 @@ public abstract class AnimationActivityBase : Activity
      */
     protected async UniTask PlayAndAwaitAsync(ClipTransition clip, float fade, CancellationToken token)
     {
-        var tcs = new UniTaskCompletionSource<bool>();
         var state = Ctrl.GetLayer(0).Play(clip, fade);
-        if (state != null)
-            state.OwnedEvents.OnEnd = () => tcs.TrySetResult(true);
+
+        // If Animancer returned null (e.g. invalid clip or controller in bad state) there is no
+        // AnimancerState to attach OnEnd to, so the TCS would never be resolved — hanging Phase 1
+        // indefinitely. Return immediately so the exit step completes without blocking.
+        if (state == null) return;
+
+        var tcs = new UniTaskCompletionSource<bool>();
+        state.OwnedEvents.OnEnd = () => tcs.TrySetResult(true);
         try
         {
             using var reg = token.Register(() => tcs.TrySetCanceled());
@@ -43,7 +48,7 @@ public abstract class AnimationActivityBase : Activity
         }
         finally
         {
-            if (state != null) state.OwnedEvents.OnEnd = null;
+            state.OwnedEvents.OnEnd = null;
         }
     }
 }

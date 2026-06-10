@@ -80,8 +80,7 @@ public class PlayerStateConstructor
             }));
         }
 
-        // — Ability references for activity lambdas —
-        var wkAbility    = _host.MotionOrchestrator.GetAbility<WallKickAbility>();
+        // — Ability reference for ledge activity (registered after construction; captured by reference below) —
         var ledgeAbility = _host.MotionOrchestrator.GetAbility<LedgeGrabAbility>();
 
         // — One-shot states —
@@ -89,14 +88,16 @@ public class PlayerStateConstructor
         {
             jump.WithActivity(new OneShotAnimActivity(ctrl, cfg.Jump));
             fall.WithActivity(new OneShotAnimActivity(ctrl, cfg.Fall));
-            // Wall kick animation selection:
+            // Wall kick animation selection — ability is resolved lazily at execution time because
+            // abilities are registered after the state machine is constructed.
             //   Wall-run exit  → WallKickRight / WallKickLeft based on wall side (falls back to WallKick → Jump)
             //   Standalone kick → WallKick (falls back to Jump)
             wallKick.WithActivity(new OneShotAnimActivity(ctrl, () =>
             {
-                if (wkAbility?.IsWallRunExit == true)
+                var wk = _host.MotionOrchestrator.GetAbility<WallKickAbility>();
+                if (wk?.IsWallRunExit == true)
                 {
-                    OneShotAnimDef sided = wkAbility.KickSign >= 0f ? cfg.WallKickRight : cfg.WallKickLeft;
+                    OneShotAnimDef sided = wk.KickSign >= 0f ? cfg.WallKickRight : cfg.WallKickLeft;
                     if (sided?.IsValid == true) return sided;
                 }
                 if (cfg.WallKick?.IsValid == true) return cfg.WallKick;
@@ -127,8 +128,12 @@ public class PlayerStateConstructor
         // QuickTurn is included because its tag has a limited lifetime: if the exit clip of the source
         // state plays during Phase 1, InternalTick can fire and clear IsQuickTurning before the enter
         // phase starts, causing the QuickTurnAnimationActivity to be skipped entirely.
+        // WallKick is included so the source state's exit clip does not delay the kick animation on
+        // wall-run exit or rapid airborne kicks. Self-transitions are blocked by the sequencer before
+        // reaching this policy, so the from != wallKick guard is not needed.
         _builder.WithExitSkipPolicy((from, to) =>
-            to == jump || to == fall || to == dash || to == sprint || to == slide || to == quickTurn);
+            to == jump || to == fall || to == dash || to == sprint || to == slide || to == quickTurn
+            || to == wallKick);
 
         _builder
             .WithState(active)

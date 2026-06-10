@@ -46,7 +46,11 @@ namespace DynamicPhysics
         public bool CanActivate(MotionContext context, List<MotionRequest> requests)
         {
             if (!context.HasTag(MotionTag.Airborne)) return false;
-            if (Time.time - _lastDeactivationTime < _settings.ReactivationCooldown) return false;
+            // Skip reactivation cooldown during a wall kick so the player can chain directly
+            // from one wall to another without waiting. The approaching-wall check in DetectWall
+            // prevents re-latching to the wall just kicked from (player is moving away from it).
+            bool isWallKicking = context.HasTag(MotionTag.WallKicking);
+            if (!isWallKicking && Time.time - _lastDeactivationTime < _settings.ReactivationCooldown) return false;
 
             Vector3 hVel = context.Velocity;
             hVel.y = 0f;
@@ -85,24 +89,15 @@ namespace DynamicPhysics
 
             if (_settings.RequireInputToSustain)
             {
-                Vector2 moveInput = context.Input.MoveInput;
-                if (moveInput.sqrMagnitude < 0.01f)
+                // End the wall run if the player releases all directional input.
+                // The directional angle check is intentionally omitted: after a wall-to-wall
+                // kick the player's input direction is perpendicular to the new wall, and
+                // GetVelocityInfluence already steers velocity along it — no need to punish
+                // the approach angle here.
+                if (context.Input.MoveInput.sqrMagnitude < 0.01f)
                 {
                     Deactivate(context);
                     return;
-                }
-
-                Vector3 worldMove = context.Input.CameraForward * moveInput.y
-                                  + context.Input.CameraRight * moveInput.x;
-                worldMove.y = 0f;
-                if (worldMove.sqrMagnitude > 0.001f)
-                {
-                    worldMove.Normalize();
-                    if (Vector3.Angle(worldMove, _wallForward) > _settings.InputSustainAngleThreshold)
-                    {
-                        Deactivate(context);
-                        return;
-                    }
                 }
             }
 
@@ -154,31 +149,69 @@ namespace DynamicPhysics
 
             Vector3 right = Vector3.Cross(Vector3.up, forward);
 
+            // Side rays: standard wall-run detection for walls running alongside the player.
+            // MinWallAngle filters out walls the player is running directly into (e.g. pillar ends).
             if (Physics.Raycast(pos, right, out RaycastHit hitRight,
                     _settings.WallDetectionDistance, _settings.WallLayers, QueryTriggerInteraction.Ignore))
             {
                 if (Vector3.Angle(-hitRight.normal, forward) >= _settings.MinWallAngle)
-                {
-                    _wallNormal = hitRight.normal;
-                    _wallForward = Vector3.Cross(_wallNormal, Vector3.up).normalized;
-                    if (Vector3.Dot(_wallForward, forward) < 0f) _wallForward = -_wallForward;
-                    return true;
-                }
+                    return SetWall(hitRight.normal, forward, context);
             }
 
             if (Physics.Raycast(pos, -right, out RaycastHit hitLeft,
                     _settings.WallDetectionDistance, _settings.WallLayers, QueryTriggerInteraction.Ignore))
             {
                 if (Vector3.Angle(-hitLeft.normal, forward) >= _settings.MinWallAngle)
+                    return SetWall(hitLeft.normal, forward, context);
+            }
+
+            // Forward and diagonal rays: detect walls the player is moving toward, e.g. the
+            // target wall during a wall-to-wall kick where the approach is nearly perpendicular.
+            // Uses the same 5-direction sweep as WallKickAbility.DetectKickWall.
+            Vector3[] forwardDirs = { forward, (forward + right).normalized, (forward - right).normalized };
+            foreach (var dir in forwardDirs)
+            {
+                if (Physics.Raycast(pos, dir, out RaycastHit hit,
+                        _settings.WallDetectionDistance, _settings.WallLayers, QueryTriggerInteraction.Ignore))
                 {
-                    _wallNormal = hitLeft.normal;
-                    _wallForward = Vector3.Cross(_wallNormal, Vector3.up).normalized;
-                    if (Vector3.Dot(_wallForward, forward) < 0f) _wallForward = -_wallForward;
-                    return true;
+                    if (Mathf.Abs(hit.normal.y) < 0.5f)
+                        return SetWall(hit.normal, forward, context);
                 }
             }
 
             return false;
+        }
+
+        /**
+         * <summary>
+         * Stores the detected wall normal and computes <see cref="_wallForward"/>.
+         * When velocity is nearly perpendicular to the wall (head-on or wall-kick approach) the
+         * player's input direction is used instead so the run starts in the intended direction.
+         * </summary>
+         */
+        private bool SetWall(Vector3 normal, Vector3 forward, MotionContext context)
+        {
+            _wallNormal  = normal;
+            _wallForward = Vector3.Cross(_wallNormal, Vector3.up).normalized;
+
+            float velDot = Vector3.Dot(_wallForward, forward);
+            if (Mathf.Abs(velDot) >= 0.1f)
+            {
+                if (velDot < 0f) _wallForward = -_wallForward;
+            }
+            else
+            {
+                // Head-on approach: velocity is perpendicular to the wall, so the dot product
+                // does not determine direction. Use the player's input direction instead.
+                Vector2 moveInput = context.Input.MoveInput;
+                Vector3 worldInput = context.Input.CameraForward * moveInput.y
+                                   + context.Input.CameraRight  * moveInput.x;
+                worldInput.y = 0f;
+                if (worldInput.sqrMagnitude > 0.01f && Vector3.Dot(_wallForward, worldInput) < 0f)
+                    _wallForward = -_wallForward;
+            }
+
+            return true;
         }
     }
 }

@@ -48,6 +48,15 @@ namespace DynamicPhysics
         /** <summary>True if this kick was triggered by jumping out of a wall run; false for standalone kicks.</summary> */
         public bool IsWallRunExit { get; private set; }
 
+        /**
+         * <summary>
+         * Monotonically increasing counter incremented on every <see cref="Activate"/> call.
+         * <see cref="WallKickState"/> tracks the last seen value so it can detect when a new
+         * kick fires while the state is still active and force a clean re-entry cycle.
+         * </summary>
+         */
+        public int KickId { get; private set; }
+
         // Time at which the most recent wall-run-exit jump signal was detected.
         // A kick is treated as a wall-run exit if it fires within the cooldown window of this time.
         private float _wallRunExitTime = float.NegativeInfinity;
@@ -123,6 +132,7 @@ namespace DynamicPhysics
             _lastKickTime = Time.time;
             _cutApplied = false;
             IsActive = true;
+            KickId++;
 
             context.SetTag(MotionTag.WallKicking);
             context.SetTag(MotionTag.NoAutoRotate);

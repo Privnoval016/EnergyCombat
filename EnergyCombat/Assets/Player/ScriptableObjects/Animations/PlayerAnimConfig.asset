@@ -139,7 +139,7 @@ MonoBehaviour:
     FadeDuration: 0.15
   Fall:
     Clip:
-      _FadeDuration: 0.15
+      _FadeDuration: 0.25
       _Speed: 1
       _Events:
         _NormalizedTimes: []
@@ -147,7 +147,7 @@ MonoBehaviour:
         _Names: []
       _Clip: {fileID: 7400000, guid: b4929929efb5c425f8bca03d3ebf7929, type: 2}
       _NormalizedStartTime: NaN
-    FadeDuration: 0.15
+    FadeDuration: 0.25
   LandIdle:
     Clip:
       _FadeDuration: 0.15
@@ -224,7 +224,29 @@ MonoBehaviour:
         _NormalizedTimes: []
         _Callbacks: []
         _Names: []
-      _Clip: {fileID: 0}
+      _Clip: {fileID: 7400000, guid: 15d2b1aebb5454f06a7fde8c9e226fbc, type: 2}
+      _NormalizedStartTime: NaN
+    FadeDuration: 0.15
+  WallKickLeft:
+    Clip:
+      _FadeDuration: 0.05
+      _Speed: 1
+      _Events:
+        _NormalizedTimes: []
+        _Callbacks: []
+        _Names: []
+      _Clip: {fileID: 7400000, guid: 3ef2ba306830148bf89527aa2b5a58d8, type: 2}
+      _NormalizedStartTime: NaN
+    FadeDuration: 0.01
+  WallKickRight:
+    Clip:
+      _FadeDuration: 0.25
+      _Speed: 1
+      _Events:
+        _NormalizedTimes: []
+        _Callbacks: []
+        _Names: []
+      _Clip: {fileID: 7400000, guid: 50968d6a83fe141578b209efbc9764ae, type: 2}
       _NormalizedStartTime: NaN
     FadeDuration: 0.15
   LedgeGrab:
