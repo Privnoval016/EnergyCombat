@@ -130,6 +130,7 @@ namespace Combat
             };
 
             context.LoadAbilityTags();
+            context.CurrentTarget = controller.CurrentTarget;
 
             if (ability.BaseStats != null)
             {

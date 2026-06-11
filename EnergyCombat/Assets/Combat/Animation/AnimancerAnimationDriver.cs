@@ -1,6 +1,7 @@
 using System.Threading;
 using Animancer;
 using Cysharp.Threading.Tasks;
+using DynamicPhysics;
 using UnityEngine;
 
 namespace Combat
@@ -9,6 +10,24 @@ namespace Combat
     public class AnimancerAnimationDriver : MonoBehaviour, IAnimationDriver
     {
         [SerializeField] private AnimancerComponent _animancer;
+
+        /**
+         * <summary>
+         * Player animation controller. Assign when root-motion redirect to Rigidbody is needed.
+         * Root motion is toggled via <see cref="PlayerAnimationController.SetRootMotionActive"/>.
+         * </summary>
+         */
+        [Tooltip("PlayerAnimationController on the player. Required for root-motion redirect.")]
+        [SerializeField] private PlayerAnimationController _animCtrl;
+
+        /**
+         * <summary>
+         * Motion orchestrator. Required to set <see cref="MotionTag.RootMotionDriven"/>
+         * so <see cref="InputSteeringStage"/> yields control to the animation clip.
+         * </summary>
+         */
+        [Tooltip("MotionOrchestrator on the player. Required for root-motion tag management.")]
+        [SerializeField] private MotionOrchestrator _motionOrchestrator;
 
         private AnimancerState _currentState;
 
@@ -39,15 +58,26 @@ namespace Combat
 
             _currentState.OwnedEvents.OnEnd = () => handle.NotifyComplete();
 
+            if (request.UseRootMotion)
+            {
+                _animCtrl?.SetRootMotionActive(true);
+                _motionOrchestrator?.Context.SetTag(MotionTag.RootMotionDriven);
+            }
+
             TrackNormalizedTimeAsync(handle, _currentState, token).Forget();
             return handle;
         }
 
         public void Stop()
         {
-            if (_currentState == null) return;
-            _currentState.OwnedEvents.OnEnd = null;
-            _currentState = null;
+            if (_currentState != null)
+            {
+                _currentState.OwnedEvents.OnEnd = null;
+                _currentState = null;
+            }
+
+            _animCtrl?.SetRootMotionActive(false);
+            _motionOrchestrator?.Context.RemoveTag(MotionTag.RootMotionDriven);
         }
 
         private static async UniTaskVoid TrackNormalizedTimeAsync(

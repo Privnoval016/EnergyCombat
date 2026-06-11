@@ -66,6 +66,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d90a2a853532747f3bef7279b3c9a502, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4536268143323399864}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d90a2a853532747f3bef7279b3c9a502, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8406056458225205031}
   m_SourcePrefab: {fileID: 100100000, guid: d90a2a853532747f3bef7279b3c9a502, type: 3}
 --- !u!1 &2594398658046649584 stripped
 GameObject:
@@ -101,6 +104,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationController
   _config: {fileID: 11400000, guid: 2fbad38b9d88f460f807a27419009da6, type: 2}
   _player: {fileID: 0}
+--- !u!114 &8406056458225205031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2594398658046649584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bb9852087f39824f9647d710481937e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kybernetik.Animancer::Animancer.RedirectRootMotionToRigidbody
+  _Animator: {fileID: 8767061162540098608}
+  _Target: {fileID: 0}
 --- !u!95 &8767061162540098608 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: d90a2a853532747f3bef7279b3c9a502, type: 3}

@@ -75,7 +75,7 @@ MonoBehaviour:
     KickOutDistance: 8
     SameWallHeightScale: 0
     SameWallAngleThreshold: 0
-    KickCooldown: 0.3
+    KickCooldown: 0.45
     MinAirborneTime: 0.05
   PostStateBoost:
     Enabled: 1

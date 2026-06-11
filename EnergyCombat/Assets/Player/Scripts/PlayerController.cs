@@ -1,4 +1,5 @@
 using Combat;
+using Combat.Targeting;
 using DynamicPhysics;
 using Player.Config;
 using StateMachine;
@@ -19,6 +20,15 @@ public class PlayerController : MonoBehaviour, ILocomotionState
 
     [Header("Combat")]
     [SerializeField] private CombatController combatController;
+
+    /**
+     * <summary>
+     * Optional targeting system. When assigned, the player will automatically
+     * soft-target nearby enemies and pass the selected target to the combat controller.
+     * </summary>
+     */
+    [Tooltip("SoftTargetingSystem on this GameObject. Wires targeting into combat on startup.")]
+    [SerializeField] private SoftTargetingSystem _softTargeting;
 
     [Header("Animation")]
     [SerializeField] private PlayerAnimationController _animationController;
@@ -83,6 +93,12 @@ public class PlayerController : MonoBehaviour, ILocomotionState
      * </summary>
      */
     public bool IsAttacking => combatController?.IsExecuting ?? false;
+
+    /** <summary><c>true</c> when the soft targeting system has an active target.</summary> */
+    public bool HasTarget => _softTargeting?.HasTarget ?? false;
+
+    /** <summary>The currently soft-targeted point, or <c>null</c>.</summary> */
+    public ITargetable CurrentTarget => _softTargeting?.CurrentTarget;
 
     public bool HasDirectionalMoveInput => MoveMagnitude >= InputThresholds.MoveInputThreshold;
 
@@ -238,6 +254,16 @@ public class PlayerController : MonoBehaviour, ILocomotionState
         }
 
         RegisterMovementAbilities();
+
+        // Wire targeting into combat and physics
+        if (_softTargeting != null && combatController != null)
+            combatController.SetTargetProvider(_softTargeting);
+
+        if (combatController != null)
+            motionOrchestrator.RegisterAbility(new CombatMovementAbility(combatController));
+
+        if (_softTargeting != null)
+            motionOrchestrator.AddPipelineStage(new CombatTargetFacingStage(_softTargeting, this));
     }
 
     private void RegisterMovementAbilities()

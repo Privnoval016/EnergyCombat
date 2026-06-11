@@ -309,6 +309,15 @@ namespace DynamicPhysics
         /** <summary>Creates a fluent builder for composing runtime configurations.</summary> */
         public MovementProfileBuilder CreateBuilder() => new MovementProfileBuilder(_config);
 
+        /**
+         * <summary>
+         * Adds a custom pipeline stage. The pipeline re-sorts by priority after insertion
+         * so the stage executes at the correct position regardless of registration order.
+         * Call after <c>Awake</c> from external systems (e.g. <see cref="PlayerController"/>).
+         * </summary>
+         */
+        public void AddPipelineStage(IMotionStage stage) => _pipeline.AddStage(stage);
+
         #endregion
 
         #region Internal Methods

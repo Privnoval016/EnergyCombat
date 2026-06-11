@@ -1,0 +1,119 @@
+using System;
+using Extensions.EventBus;
+using UnityEngine;
+
+namespace Combat.Targeting
+{
+    /**
+     * <summary>
+     * MonoBehaviour that implements soft targeting: no explicit lock-on button,
+     * but always tracks the best nearby candidate and locks onto it during attacks.
+     * Attach to the player GameObject and assign a <see cref="TargetingSettings"/> asset.
+     * </summary>
+     *
+     * <remarks>
+     * Target evaluation is throttled by <see cref="TargetingSettings.UpdateInterval"/>
+     * to avoid per-frame iteration over all registered candidates. During an attack
+     * ability execution the current target is locked (if <c>LockTargetDuringAttacks</c>
+     * is enabled) so mid-strike target switches do not change animation direction.
+     * </remarks>
+     */
+    [AddComponentMenu("Combat/Targeting/Soft Targeting System")]
+    public class SoftTargetingSystem : MonoBehaviour, ITargetProvider
+    {
+        [SerializeField] private TargetingSettings _settings;
+
+        /** <inheritdoc /> */
+        public ITargetable CurrentTarget { get; private set; }
+
+        /** <inheritdoc /> */
+        public bool HasTarget => CurrentTarget != null;
+
+        /**
+         * <summary>
+         * Fires when the selected target changes.
+         * Parameters: (previousTarget, newTarget). Either may be <c>null</c>.
+         * </summary>
+         */
+        public event Action<ITargetable, ITargetable> OnTargetChanged;
+
+        private bool _isLocked;
+        private float _nextUpdateTime;
+
+        private EventBinding<AbilityStartedEvent> _startedBinding;
+        private EventBinding<AbilityEndedEvent> _endedBinding;
+
+        private void OnEnable()
+        {
+            _startedBinding = new EventBinding<AbilityStartedEvent>(OnAbilityStarted);
+            _endedBinding   = new EventBinding<AbilityEndedEvent>(OnAbilityEnded);
+            EventBus<AbilityStartedEvent>.Register(_startedBinding);
+            EventBus<AbilityEndedEvent>.Register(_endedBinding);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<AbilityStartedEvent>.Deregister(_startedBinding);
+            EventBus<AbilityEndedEvent>.Deregister(_endedBinding);
+        }
+
+        private void Update()
+        {
+            if (_isLocked) return;
+            if (Time.time < _nextUpdateTime) return;
+            _nextUpdateTime = Time.time + GetUpdateInterval();
+            EvaluateBestTarget();
+        }
+
+        private float GetUpdateInterval() =>
+            _settings != null ? _settings.UpdateInterval : 0.1f;
+
+        private void EvaluateBestTarget()
+        {
+            TargetingScorer scorer = _settings?.Scorer;
+            if (scorer == null)
+            {
+                SetTarget(null);
+                return;
+            }
+
+            Vector3 pos     = transform.position;
+            Vector3 forward = transform.forward;
+
+            ITargetable best      = null;
+            float       bestScore = float.NegativeInfinity;
+
+            foreach (ITargetable candidate in TargetingRegistry.All)
+            {
+                if (!candidate.IsTargetable) continue;
+                float score = scorer.Score(candidate, pos, forward, CurrentTarget);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+
+            SetTarget(bestScore > 0f ? best : null);
+        }
+
+        private void SetTarget(ITargetable newTarget)
+        {
+            if (ReferenceEquals(newTarget, CurrentTarget)) return;
+            ITargetable old = CurrentTarget;
+            CurrentTarget = newTarget;
+            OnTargetChanged?.Invoke(old, newTarget);
+        }
+
+        private void OnAbilityStarted(AbilityStartedEvent evt)
+        {
+            if (_settings != null && _settings.LockTargetDuringAttacks)
+                _isLocked = true;
+        }
+
+        private void OnAbilityEnded(AbilityEndedEvent evt)
+        {
+            _isLocked = false;
+        }
+    }
+}

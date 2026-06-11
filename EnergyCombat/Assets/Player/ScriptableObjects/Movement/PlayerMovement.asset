@@ -23,7 +23,7 @@ MonoBehaviour:
     LowSpeedControl: 1
     HardStopDriftAngleThreshold: 135
     HardStopDriftMinSpeedRatio: 0.24
-    HardStopDriftDeceleration: 3
+    HardStopDriftDeceleration: 7
     HardStopDriftReaccelerationMultiplier: 0.3
     QuickTurnHoldDuration: 0.25
     RotationSpeed: 25

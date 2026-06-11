@@ -87,5 +87,24 @@ namespace DynamicPhysics
          * </summary>
          */
         public static readonly Tag WallRunJump = new Tag("WallRunJump");
+
+        /**
+         * <summary>
+         * Set by <see cref="CombatMovementAbility"/> while an attack ability with
+         * <c>AnimationRequest.LockMovement = true</c> is executing.
+         * <see cref="InputSteeringStage"/> returns zero contextual control when this tag is active,
+         * suppressing joystick steering so the animation drives movement exclusively.
+         * </summary>
+         */
+        public static readonly Tag AttackMovementLocked = new Tag("AttackMovementLocked");
+
+        /**
+         * <summary>
+         * Set by <see cref="AnimancerAnimationDriver"/> while root-motion playback is active.
+         * <see cref="InputSteeringStage"/> returns zero contextual control so the Rigidbody
+         * displacement comes entirely from the animation clip's delta position.
+         * </summary>
+         */
+        public static readonly Tag RootMotionDriven = new Tag("RootMotionDriven");
     }
 }

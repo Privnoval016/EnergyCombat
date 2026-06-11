@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using Combat.Targeting;
 using Cysharp.Threading.Tasks;
 using Extensions.EntityComponent;
 using Extensions.EventBus;
@@ -71,6 +72,8 @@ namespace Combat
         /** <summary>Hitbox controllers keyed by <see cref="IHitboxController.HitboxId"/>.</summary> */
         private readonly Dictionary<string, IHitboxController> _hitboxRegistry = new();
 
+        private ITargetProvider _targetProvider;
+
         /**
          * <summary>
          * Extensible component bus for additional combat subsystems.
@@ -100,6 +103,25 @@ namespace Combat
 
         /** <summary>The execution context of the currently active ability, or null.</summary> */
         public CombatContext ActiveContext => _activeContext;
+
+        /**
+         * <summary>
+         * The currently selected soft target, or <c>null</c> if no targeting system is wired
+         * or no candidate is in range. Snapshotted into <see cref="CombatContext.CurrentTarget"/>
+         * at execution start by <see cref="AbilityExecutor"/>.
+         * </summary>
+         */
+        public ITargetable CurrentTarget => _targetProvider?.CurrentTarget;
+
+        /**
+         * <summary>
+         * <c>true</c> while an executing ability's <see cref="AnimationRequest"/> has
+         * <c>LockMovement = true</c>. Read by <see cref="DynamicPhysics.CombatMovementAbility"/>
+         * to activate the <see cref="DynamicPhysics.MotionTag.AttackMovementLocked"/> tag.
+         * </summary>
+         */
+        public bool IsMovementLocked =>
+            IsExecuting && _activeContext?.Ability?.AnimationRequest?.LockMovement == true;
 
         #endregion
 
@@ -193,6 +215,15 @@ namespace Combat
             InputBuffer.Push(evt);
             TryTriggerAbility();
         }
+
+        /**
+         * <summary>
+         * Injects the targeting system. Call from <c>PlayerController</c> after both
+         * systems are initialised. The targeting provider is queried each time an ability
+         * fires to snapshot the current target into the execution context.
+         * </summary>
+         */
+        public void SetTargetProvider(ITargetProvider provider) => _targetProvider = provider;
 
         /**
          * <summary>

@@ -48,6 +48,8 @@ GameObject:
   - component: {fileID: 5295536920856279963}
   - component: {fileID: 2708719737648154043}
   - component: {fileID: 1083128824394032840}
+  - component: {fileID: 6651452722702424345}
+  - component: {fileID: 5879460735012957945}
   m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
@@ -218,6 +220,7 @@ MonoBehaviour:
   movementOrientation: {fileID: 0}
   locomotionConfig: {fileID: 11400000, guid: 2f15e492d2eaf43dcad1d75f573985ca, type: 2}
   combatController: {fileID: 0}
+  _softTargeting: {fileID: 0}
   _animationController: {fileID: 7976991354371597033}
 --- !u!114 &2708719737648154043
 MonoBehaviour:
@@ -247,6 +250,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combat.AnimancerAnimationDriver
   _animancer: {fileID: 5716796775522948726}
+  _animCtrl: {fileID: 7976991354371597033}
+  _motionOrchestrator: {fileID: 3645171175461346969}
+--- !u!114 &6651452722702424345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018543644747926841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef3b5cd342bea4f1a86b551005fec95d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.Targeting.SoftTargetingSystem
+  _settings: {fileID: 11400000, guid: 29bd4b487c65448dfb6add82c5543d68, type: 2}
+--- !u!114 &5879460735012957945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018543644747926841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33c01c4a7c104684b1a06c05d6c894d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.Targeting.UI.TargetIndicatorController
+  _targeting: {fileID: 6651452722702424345}
+  _indicatorImpl: {fileID: 0}
 --- !u!1001 &5784865513357714513
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -307,6 +339,10 @@ PrefabInstance:
       propertyPath: _player
       value: 
       objectReference: {fileID: 5295536920856279963}
+    - target: {fileID: 8406056458225205031, guid: d92dbd65a7c7b4e17b765fdddf42e96f, type: 3}
+      propertyPath: _Target
+      value: 
+      objectReference: {fileID: 4813496900732552107}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

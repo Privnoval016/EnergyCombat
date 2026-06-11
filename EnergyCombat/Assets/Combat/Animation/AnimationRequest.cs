@@ -25,6 +25,15 @@ namespace Combat
         [Tooltip("Enable root motion for this clip.")]
         public bool UseRootMotion;
 
+        /**
+         * <summary>
+         * When <c>true</c>, joystick steering is suppressed via <see cref="DynamicPhysics.MotionTag.AttackMovementLocked"/>
+         * for the duration of this animation so the clip drives movement exclusively.
+         * </summary>
+         */
+        [Tooltip("Lock joystick movement during this attack animation.")]
+        public bool LockMovement;
+
         /** <summary>Animator layer index to play on. 0 = base.</summary> */
         [Tooltip("Animator layer. 0 = base, higher = overlay.")]
         public int Layer;

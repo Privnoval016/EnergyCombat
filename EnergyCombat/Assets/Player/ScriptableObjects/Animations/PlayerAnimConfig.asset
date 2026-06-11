@@ -122,10 +122,10 @@ MonoBehaviour:
       _Clip: {fileID: 7400000, guid: 2c305d1dfd3664a6ba62379eb5138b62, type: 2}
       _NormalizedStartTime: NaN
     FadeDuration: 0.15
-  WalkIdleGracePeriod: 0.15
+  WalkIdleGracePeriod: 0.3
   WalkEnterSkipWindow: 1
-  SprintIdleGracePeriod: 0.1
-  SprintEnterSkipWindow: 0.5
+  SprintIdleGracePeriod: 0.3
+  SprintEnterSkipWindow: 1
   Jump:
     Clip:
       _FadeDuration: 0.15

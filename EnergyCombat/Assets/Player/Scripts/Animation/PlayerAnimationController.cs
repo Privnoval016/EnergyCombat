@@ -19,10 +19,24 @@ public class PlayerAnimationController : MonoBehaviour
     public void SetActiveMixer(Vector2MixerState mixer) => _activeMixer = mixer;
     public void ClearActiveMixer() => _activeMixer = null;
 
+    /**
+     * <summary>
+     * Enables or disables root motion. When active, <c>Animator.applyRootMotion</c> is set
+     * to <c>true</c>, which causes Unity to invoke <c>OnAnimatorMove</c> — picked up by
+     * the <c>RedirectRootMotionToRigidbody</c> component on this GameObject to drive the
+     * Rigidbody instead of the Transform.
+     * </summary>
+     */
+    public void SetRootMotionActive(bool active)
+    {
+        _animancer.Animator.applyRootMotion = active;
+    }
+
     private void Awake()
     {
         _animancer = GetComponent<AnimancerComponent>();
         // Prevent Animancer from applying root-motion data to the transform — physics owns movement and rotation.
+        // Root motion is re-enabled per-ability via SetRootMotionActive and redirected by RedirectRootMotionToRigidbody.
         _animancer.Animator.applyRootMotion = false;
         if (_player == null) _player = GetComponent<PlayerController>();
     }

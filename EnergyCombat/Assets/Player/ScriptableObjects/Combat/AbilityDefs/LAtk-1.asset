@@ -25,6 +25,7 @@ MonoBehaviour:
     Clip: {fileID: 0}
     Speed: 1
     UseRootMotion: 0
+    LockMovement: 1
     Layer: 0
     FadeInDuration: 0.1
     Loop: 0

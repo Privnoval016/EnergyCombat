@@ -96,11 +96,13 @@ namespace DynamicPhysics
 
         private float GetContextualControl(MotionContext context)
         {
-            if (context.HasTag(MotionTag.Dashing))       return 0.05f;
-            if (context.HasTag(MotionTag.WallRunning))   return 0.15f;
-            if (context.HasTag(MotionTag.Swinging))      return 0.3f;
-            if (context.HasTag(MotionTag.SlidingCrouch)) return 0.2f;
-            if (context.HasTag(MotionTag.WalkStarting))  return 0f;
+            if (context.HasTag(MotionTag.Dashing))              return 0.05f;
+            if (context.HasTag(MotionTag.WallRunning))          return 0.15f;
+            if (context.HasTag(MotionTag.Swinging))             return 0.3f;
+            if (context.HasTag(MotionTag.SlidingCrouch))        return 0.2f;
+            if (context.HasTag(MotionTag.WalkStarting))         return 0f;
+            if (context.HasTag(MotionTag.AttackMovementLocked)) return 0f;
+            if (context.HasTag(MotionTag.RootMotionDriven))     return 0f;
             return 1f;
         }
 

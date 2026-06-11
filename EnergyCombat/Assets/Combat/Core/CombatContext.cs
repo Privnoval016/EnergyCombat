@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using Combat.Targeting;
 
 namespace Combat
 {
@@ -25,6 +26,15 @@ namespace Combat
 
         /** <summary>The <c>CombatController</c> that owns this execution.</summary> */
         public CombatController Controller;
+
+        /**
+         * <summary>
+         * The soft-targeted point at the moment this ability fired. Snapshotted at execution
+         * start so mid-strike target switches do not affect the active pipeline.
+         * May be <c>null</c> if no target was selected when the ability triggered.
+         * </summary>
+         */
+        public ITargetable CurrentTarget;
 
         #endregion
 
