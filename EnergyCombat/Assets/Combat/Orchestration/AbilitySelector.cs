@@ -14,8 +14,9 @@ namespace Combat
      * Resolution rules (in order):
      * <list type="number">
      * <item>If a combo node is active and its window is open, evaluate its transitions first.</item>
-     * <item>If a transition matches, follow it and return the target node's ability.</item>
-     * <item>Otherwise scan all active loadouts in registration order — first match wins.</item>
+     * <item>If a transition matches, follow it and return the target node's ability (consuming the input).</item>
+     * <item>Terminal transitions reset the combo without consuming the input so it falls through to loadouts.</item>
+     * <item>Scan all active loadouts in registration order — first match wins (consuming the input).</item>
      * <item>Return null if nothing matches.</item>
      * </list>
      *
@@ -30,16 +31,69 @@ namespace Combat
      */
     public class AbilitySelector
     {
+        // ── Result type ───────────────────────────────────────────────────────
+
+        /**
+         * <summary>
+         * Returned by <see cref="Resolve"/>. Pairs the resolved ability with a flag indicating
+         * whether it was reached via a combo transition. Used by <c>CombatController</c> to
+         * decide whether to preserve the active combo chain when the new ability interrupts.
+         * </summary>
+         */
+        public readonly struct ResolveResult
+        {
+            /** <summary>The ability that was matched.</summary> */
+            public readonly AbilityDefinition Ability;
+
+            /**
+             * <summary>
+             * <c>true</c> when this ability was resolved via a non-terminal combo transition.
+             * <c>false</c> when resolved from a fresh loadout lookup (starter ability).
+             * </summary>
+             */
+            public readonly bool WasComboTransition;
+
+            public ResolveResult(AbilityDefinition ability, bool wasComboTransition)
+            {
+                Ability           = ability;
+                WasComboTransition = wasComboTransition;
+            }
+        }
+
+        // ── State ─────────────────────────────────────────────────────────────
+
         private readonly List<AbilityLoadout> _loadouts  = new List<AbilityLoadout>();
         private ComboDefinition _currentDefinition;
         private int _currentNodeIndex = -1;
         private int _interruptCount;
         private float _lastInputTime;
         private readonly CountdownTimer _comboWindowTimer;
+        private readonly CombatInputSettings _settings;
 
-        /** <summary>Creates a selector with an optional initial loadout.</summary> */
-        public AbilitySelector(AbilityLoadout initialLoadout = null)
+        /**
+         * <summary>
+         * Set by <see cref="PreOpenFollowUpCombo"/> during an ability's recovery window before
+         * the ability has formally completed. Makes <see cref="IsInCombo"/> return <c>true</c>
+         * without needing the countdown timer to be running, so <see cref="TryResolveCombo"/>
+         * can fire during recovery-phase cancels.
+         * Cleared by <see cref="OnAbilityCompleted"/> and <see cref="ResetCombo"/>.
+         * </summary>
+         */
+        private bool _preOpened;
+
+        // ── Construction ──────────────────────────────────────────────────────
+
+        /**
+         * <summary>Creates a selector with an optional initial loadout and input settings.</summary>
+         *
+         * <param name="settings">
+         * Input settings asset. When null, grace windows fall back to buffer defaults.
+         * </param>
+         * <param name="initialLoadout">Optional first loadout.</param>
+         */
+        public AbilitySelector(CombatInputSettings settings = null, AbilityLoadout initialLoadout = null)
         {
+            _settings         = settings;
             _comboWindowTimer = new CountdownTimer(0f);
             if (initialLoadout != null)
                 _loadouts.Add(initialLoadout);
@@ -84,22 +138,54 @@ namespace Combat
 
         // ── Combo state ───────────────────────────────────────────────────────
 
-        /** <summary>True when a combo sequence is active and the input window has not expired.</summary> */
+        /**
+         * <summary>
+         * True while a combo sequence is being tracked and has not expired.
+         * The combo stays alive until one of:
+         * <list type="bullet">
+         *   <item><see cref="OnAbilityCompleted"/> with no follow-up — explicit reset.</item>
+         *   <item><see cref="OnAbilityInterrupted"/> — explicit reset.</item>
+         *   <item><see cref="ComboNode.ComboWindowDuration"/> expires — auto-reset safety valve
+         *     for stuns, falls, or other cases where the ability never cleanly completes.
+         *     A duration of <c>0</c> means no expiry.</item>
+         * </list>
+         * The combo does NOT reset when the countdown timer has not been started (pre-open state)
+         * or when <c>ComboWindowDuration = 0</c> (no timer).
+         * </summary>
+         */
         public bool IsInCombo =>
             _currentDefinition != null &&
             _currentNodeIndex >= 0 &&
-            _comboWindowTimer.IsRunning &&
-            !_comboWindowTimer.IsFinished;
+            (!_comboWindowTimer.IsRunning || !_comboWindowTimer.IsFinished);
+
+        // ── Debug read-only properties ────────────────────────────────────────
+
+        /** <summary>The active combo definition, or null if no combo is in progress.</summary> */
+        public ComboDefinition CurrentComboDefinition => _currentDefinition;
+
+        /** <summary>Current node index within the active combo, or -1.</summary> */
+        public int CurrentComboNodeIndex => _currentNodeIndex;
+
+        /** <summary>True while the pre-open flag is set (recovery-phase cancel window).</summary> */
+        public bool IsPreOpened => _preOpened;
+
+        /** <summary>True while the countdown combo-window timer is running and not expired.</summary> */
+        public bool IsComboWindowActive => _comboWindowTimer.IsRunning && !_comboWindowTimer.IsFinished;
 
         // ── Resolution ────────────────────────────────────────────────────────
 
-        /** <summary>Attempts to resolve an ability from the buffer given the current context.</summary> */
-        public AbilityDefinition Resolve(CombatInputBuffer buffer, CombatContext context)
+        /**
+         * <summary>
+         * Attempts to resolve an ability from the buffer given the current context.
+         * Returns null when no ability matches.
+         * </summary>
+         */
+        public ResolveResult? Resolve(CombatInputBuffer buffer, CombatContext context)
         {
             if (IsInCombo)
             {
                 var comboResult = TryResolveCombo(buffer, context);
-                if (comboResult != null) return comboResult;
+                if (comboResult.HasValue) return comboResult;
             }
 
             return TryResolveFromLoadouts(buffer, context);
@@ -109,19 +195,55 @@ namespace Combat
 
         /**
          * <summary>
-         * Called when an ability completes normally. Opens the next combo window if the
-         * completed ability has a <see cref="AbilityDefinition.FollowUpCombo"/>.
+         * Pre-opens the follow-up combo tree for a starter ability during its recovery window,
+         * before the ability formally completes. Sets <see cref="IsInCombo"/> to <c>true</c>
+         * without starting the countdown timer so that <c>TryResolveCombo</c> can fire during
+         * recovery-phase cancels. The timer starts in <see cref="OnAbilityCompleted"/>.
+         * Does nothing if a combo is already active (avoids overriding a running chain).
+         * </summary>
+         * <param name="executed">The currently executing starter ability.</param>
+         */
+        public void PreOpenFollowUpCombo(AbilityDefinition executed)
+        {
+            if (IsInCombo) return;
+
+            var followUp = executed?.FollowUpCombo;
+            if (followUp?.RootNode == null) return;
+
+            _currentDefinition = followUp;
+            _currentNodeIndex  = 0;
+            _preOpened         = true;
+        }
+
+        /**
+         * <summary>
+         * Called when an ability completes normally.
+         * <list type="bullet">
+         *   <item>If the completed ability has an explicit <see cref="AbilityDefinition.FollowUpCombo"/>,
+         *     opens (or refreshes) the first node's countdown window.</item>
+         *   <item>If we are mid-combo and the timer is still running (opened by a previous
+         *     <see cref="TryResolveCombo"/> step), the existing window is preserved.</item>
+         *   <item>Otherwise resets the combo.</item>
+         * </list>
          * </summary>
          */
         public void OnAbilityCompleted(AbilityDefinition executed)
         {
             _interruptCount = 0;
+            _preOpened      = false;
 
             if (executed?.FollowUpCombo?.RootNode != null)
             {
                 _currentDefinition = executed.FollowUpCombo;
-                _currentNodeIndex = 0;
+                _currentNodeIndex  = 0;
                 OpenComboWindow(_currentDefinition.Nodes[0].ComboWindowDuration);
+            }
+            else if (_currentDefinition != null &&
+                     _comboWindowTimer.IsRunning &&
+                     !_comboWindowTimer.IsFinished)
+            {
+                // Mid-combo ability (no FollowUpCombo of its own): the next window was
+                // already opened by TryResolveCombo when this ability was resolved.
             }
             else
             {
@@ -150,18 +272,19 @@ namespace Combat
             }
         }
 
-        /** <summary>Resets the combo pointer, counter, and stops the window timer.</summary> */
+        /** <summary>Resets the combo pointer, pre-open flag, counter, and stops the window timer.</summary> */
         public void ResetCombo()
         {
             _currentDefinition = null;
-            _currentNodeIndex = -1;
-            _interruptCount = 0;
+            _currentNodeIndex  = -1;
+            _interruptCount    = 0;
+            _preOpened         = false;
             _comboWindowTimer.Stop();
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
 
-        private AbilityDefinition TryResolveCombo(CombatInputBuffer buffer, CombatContext context)
+        private ResolveResult? TryResolveCombo(CombatInputBuffer buffer, CombatContext context)
         {
             var node = _currentDefinition.GetNode(_currentNodeIndex);
             if (node?.Transitions == null) return null;
@@ -185,17 +308,25 @@ namespace Combat
                 _lastInputTime = now;
 
                 if (_currentNodeIndex >= 0 && targetNode != null)
+                {
                     OpenComboWindow(targetNode.ComboWindowDuration);
+                    // Consume the input so this press doesn't re-fire on subsequent frames.
+                    buffer.ConsumeInput(transition.Button);
+                    return new ResolveResult(targetNode.Ability, wasComboTransition: true);
+                }
                 else
+                {
+                    // Terminal transition: reset combo but do NOT consume the input.
+                    // It must fall through to TryResolveFromLoadouts to restart from the starter.
                     ResetCombo();
-
-                return targetNode?.Ability;
+                    return null;
+                }
             }
 
             return null;
         }
 
-        private AbilityDefinition TryResolveFromLoadouts(CombatInputBuffer buffer, CombatContext context)
+        private ResolveResult? TryResolveFromLoadouts(CombatInputBuffer buffer, CombatContext context)
         {
             if (_loadouts.Count == 0) return null;
             float now = Time.unscaledTime;
@@ -210,7 +341,14 @@ namespace Combat
                     if (!ability.AreConditionsMet(context ?? new CombatContext())) continue;
 
                     _lastInputTime = now;
-                    return ability;
+
+                    // Consume the appropriate input event so this match doesn't re-fire.
+                    if (ability.RequireHold && !buffer.IsHeld(ability.PrimaryInput))
+                        buffer.ConsumeRelease(ability.PrimaryInput);
+                    else
+                        buffer.ConsumeInput(ability.PrimaryInput);
+
+                    return new ResolveResult(ability, wasComboTransition: false);
                 }
             }
 
@@ -230,38 +368,39 @@ namespace Combat
             }
         }
 
-        private static bool IsTransitionInputSatisfied(ComboTransition transition, CombatInputBuffer buffer)
+        private bool IsTransitionInputSatisfied(ComboTransition transition, CombatInputBuffer buffer)
         {
             if (transition == null) return false;
 
             if (transition.RequireHold)
                 return buffer.GetHoldDuration(transition.Button) > 0f ||
-                       IsRecentHoldRelease(transition.Button, buffer, 0.3f);
+                       IsRecentHoldRelease(transition.Button, buffer);
 
-            return buffer.HasRecentInput(transition.Button, 0.3f);
+            // Use ComboTransitionGraceWindow override when configured.
+            float comboGrace = _settings?.ComboTransitionGraceWindow ?? 0f;
+            return comboGrace > 0f
+                ? buffer.HasRecentInput(transition.Button, comboGrace)
+                : buffer.HasRecentInput(transition.Button);
         }
 
         private static bool IsAbilityInputSatisfied(AbilityDefinition ability, CombatInputBuffer buffer)
         {
-            const float inputGrace = 0.25f;
-
             if (ability.RequireHold)
             {
                 float held = buffer.GetHoldDuration(ability.PrimaryInput);
                 if (held >= ability.HoldThreshold) return true;
-                return IsRecentHoldRelease(ability.PrimaryInput, buffer, inputGrace, ability.HoldThreshold);
+                return IsRecentHoldRelease(ability.PrimaryInput, buffer, ability.HoldThreshold);
             }
 
-            return buffer.HasRecentInput(ability.PrimaryInput, inputGrace);
+            return buffer.HasRecentInput(ability.PrimaryInput);
         }
 
         private static bool IsRecentHoldRelease(
             CombatInputButton button,
             CombatInputBuffer buffer,
-            float withinSeconds,
             float minHold = 0f)
         {
-            var release = buffer.GetLatestRelease(button, withinSeconds);
+            var release = buffer.GetLatestRelease(button);
             return release.HasValue && release.Value.HoldDuration >= minHold;
         }
     }

@@ -26,11 +26,20 @@ namespace Combat
 
         /**
          * <summary>
-         * How many seconds after this node's combo-window opens the player has
-         * to input the next step before the combo sequence resets.
-         * 0 means the combo does not continue from this node.
+         * Auto-expiry timeout in seconds. If an ability at this node finishes without the
+         * next combo step firing, the chain resets after this many seconds.
+         * <list type="bullet">
+         *   <item><c>0</c> (default) — no expiry. The chain stays alive until the ability
+         *     naturally completes or is interrupted.</item>
+         *   <item><c>&gt; 0</c> — safety valve for stuns, knockbacks, or other cases where
+         *     the ability never cleanly finishes.</item>
+         * </list>
+         * The actual input window (when the player <em>can</em> press) is controlled by
+         * animation events or <see cref="RecoveryPhase.AllowComboCancel"/>, not by this value.
          * </summary>
          */
+        [UnityEngine.Min(0f)]
+        [UnityEngine.Tooltip("Auto-expiry timeout (seconds). 0 = no expiry. Controls combo reset on stun/interrupt, not the input window.")]
         public float ComboWindowDuration;
     }
 }

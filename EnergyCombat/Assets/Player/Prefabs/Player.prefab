@@ -237,6 +237,7 @@ MonoBehaviour:
   _defaultLoadouts:
   - {fileID: 11400000, guid: 3f87fcb8a1ded4bc196a07227cc64346, type: 2}
   _animationDriverSource: {fileID: 1083128824394032840}
+  _inputSettings: {fileID: 0}
 --- !u!114 &1083128824394032840
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,6 +253,7 @@ MonoBehaviour:
   _animancer: {fileID: 5716796775522948726}
   _animCtrl: {fileID: 7976991354371597033}
   _motionOrchestrator: {fileID: 3645171175461346969}
+  _inputSettings: {fileID: 11400000, guid: d4599c3021c0c4469807c595fd47c7ad, type: 2}
 --- !u!114 &6651452722702424345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -278,7 +280,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combat.Targeting.UI.TargetIndicatorController
   _targeting: {fileID: 6651452722702424345}
-  _indicatorImpl: {fileID: 0}
+  _indicator: {fileID: 0}
 --- !u!1001 &5784865513357714513
 PrefabInstance:
   m_ObjectHideFlags: 0

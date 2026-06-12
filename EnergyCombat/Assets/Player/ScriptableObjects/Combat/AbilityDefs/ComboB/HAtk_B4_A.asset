@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eda1b211d84d46a0b92786b587f49c4, type: 3}
+  m_Name: HAtk_B4_A
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.Abilities.AbilityDefinition
+  AbilityName: Heavy B4A
+  Tags:
+  - _value: Melee
+  PrimaryInput: 1
+  RequireHold: 0
+  HoldThreshold: 0.3
+  Conditions:
+  - rid: 2379993598603296948
+  BaseStats: []
+  AnimationRequest:
+    Clip: {fileID: 7400000, guid: 2c029ac122f364fbb8c8dff76bc843e6, type: 2}
+    Speed: 1
+    UseRootMotion: 0
+    LockMovement: 1
+    Layer: 0
+    FadeInDuration: 0.1
+    Loop: 0
+    EventNames: []
+  Phases:
+  - rid: 2379993598603296949
+  - rid: 2379993598603296942
+  - rid: 2379993598603296950
+  FollowUpCombo: {fileID: 11400000, guid: 418ca589cb8a44ae1aa58de507d54b67, type: 2}
+  InterruptBehavior: 1
+  references:
+    version: 2
+    RefIds:
+    - rid: 2379993598603296942
+      type: {class: ActivePhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        ActiveEndEvent: ActiveEnd
+        FallbackDuration: 0.2
+        Hitboxes: []
+    - rid: 2379993598603296948
+      type: {class: GroundedCondition, ns: Combat, asm: Assembly-CSharp}
+      data: 
+    - rid: 2379993598603296949
+      type: {class: StartupPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        StartupEndEvent: StartupEnd
+        FallbackDuration: 0.25
+    - rid: 2379993598603296950
+      type: {class: RecoveryPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        RecoveryEndEvent: RecoveryEnd
+        FallbackDuration: 0.3
+        AllowComboCancel: 1

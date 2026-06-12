@@ -306,7 +306,7 @@ MonoBehaviour:
             _NormalizedTimes: []
             _Callbacks: []
             _Names: []
-          _Clip: {fileID: 7400000, guid: 0fcd9b26700c74678af183e39826ad1d, type: 2}
+          _Clip: {fileID: 7400000, guid: 231f13b5ed0604a7490e964a7281fdac, type: 2}
           _NormalizedStartTime: NaN
     - rid: 6570460646522224862
       type: {class: ClipLoopDef, ns: , asm: Assembly-CSharp}

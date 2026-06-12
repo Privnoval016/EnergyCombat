@@ -56,6 +56,7 @@ namespace Combat
             DrawHeader("COMBAT SYSTEM");
 
             DrawExecutionSection();
+            DrawComboSection();
             DrawTagSection();
             DrawStatSection();
             DrawModifierSection();
@@ -83,6 +84,42 @@ namespace Combat
             {
                 GUILayout.Label($"Ability: {context.Ability?.AbilityName ?? "<none>"}", _labelStyle);
                 GUILayout.Label($"Combo Window: {(context.HasTag(CombatTag.ComboWindowOpen) ? "<color=lime>OPEN</color>" : "closed")}", _labelStyle);
+            }
+        }
+
+        /**
+         * <summary>
+         * Draws the combo chain section showing the current attack name, active combo definition,
+         * node index, and input window state. Colour-coded: lime = open, yellow = pre-open, red = closed.
+         * </summary>
+         */
+        private void DrawComboSection()
+        {
+            GUILayout.Space(4f);
+            GUILayout.Label("── Combo Chain ──", _headerStyle);
+
+            var selector = Target.Selector;
+            var context  = Target.ActiveContext;
+
+            string abilityName  = context?.Ability?.AbilityName ?? "<none>";
+            string abilityColor = Target.IsExecuting ? "lime" : "grey";
+            GUILayout.Label($"<color={abilityColor}><b>ATTACK: {abilityName}</b></color>", _labelStyle);
+
+            var comboDef = selector.CurrentComboDefinition;
+            if (comboDef != null && selector.CurrentComboNodeIndex >= 0)
+            {
+                string windowState = selector.IsComboWindowActive
+                    ? "<color=lime>OPEN</color>"
+                    : selector.IsPreOpened
+                        ? "<color=yellow>PRE-OPEN</color>"
+                        : "<color=red>CLOSED</color>";
+
+                GUILayout.Label($"Combo: {comboDef.name}  node {selector.CurrentComboNodeIndex}", _labelStyle);
+                GUILayout.Label($"Window: {windowState}", _labelStyle);
+            }
+            else
+            {
+                GUILayout.Label("Combo: <color=grey>none</color>", _labelStyle);
             }
         }
 

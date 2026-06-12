@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 525c2178b107b4179971bfd6c0a05473, type: 3}
+  m_Name: HeavyCombo
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.ComboDefinition
+  Nodes:
+  - Ability: {fileID: 11400000, guid: 95cae2612385e4ce48c1029a4b0bded7, type: 2}
+    Transitions:
+    - Button: 1
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 1
+    - Button: 0
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 6
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: fe14a47a612c24d66a33dd6822a6414a, type: 2}
+    Transitions:
+    - Button: 1
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 2
+    - Button: 0
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 4
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: e060ef468a0814c7ebd0a01477935eb7, type: 2}
+    Transitions:
+    - Button: 1
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 3
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: f397fe1bf67a54760bb6c88545c6dc22, type: 2}
+    Transitions: []
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 66375beaa74a944e0980068fc93238b2, type: 2}
+    Transitions:
+    - Button: 0
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 5
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 824a0e0c2ca5840738e0e4465dfa4fee, type: 2}
+    Transitions: []
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 516eca67f8ffa440882342b1125ca2b1, type: 2}
+    Transitions:
+    - Button: 1
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 7
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 1ac5db0fa3edd4d2fbcbefa020a575fa, type: 2}
+    Transitions:
+    - Button: 1
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 8
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 2cca869a50f42435d8f079aa5130ef72, type: 2}
+    Transitions:
+    - Button: 0
+      RequireHold: 0
+      MinPauseDuration: 0
+      MaxPauseDuration: 0
+      TargetNodeIndex: 9
+    ComboWindowDuration: 1
+  - Ability: {fileID: 11400000, guid: 13bad69c68b164c658ff9f79a907e602, type: 2}
+    Transitions: []
+    ComboWindowDuration: 1
+  MaxConcurrentInterrupts: 0

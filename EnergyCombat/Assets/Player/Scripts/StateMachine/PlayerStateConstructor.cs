@@ -129,11 +129,12 @@ public class PlayerStateConstructor
         // state plays during Phase 1, InternalTick can fire and clear IsQuickTurning before the enter
         // phase starts, causing the QuickTurnAnimationActivity to be skipped entirely.
         // WallKick is included so the source state's exit clip does not delay the kick animation on
-        // wall-run exit or rapid airborne kicks. Self-transitions are blocked by the sequencer before
-        // reaching this policy, so the from != wallKick guard is not needed.
+        // wall-run exit or rapid airborne kicks. Attacking is included so sprint/move exit clips
+        // don't overwrite the attack animation when the player attacks from a moving state.
+        // Self-transitions are blocked by the sequencer before reaching this policy.
         _builder.WithExitSkipPolicy((from, to) =>
             to == jump || to == fall || to == dash || to == sprint || to == slide || to == quickTurn
-            || to == wallKick);
+            || to == wallKick || to == attacking);
 
         _builder
             .WithState(active)

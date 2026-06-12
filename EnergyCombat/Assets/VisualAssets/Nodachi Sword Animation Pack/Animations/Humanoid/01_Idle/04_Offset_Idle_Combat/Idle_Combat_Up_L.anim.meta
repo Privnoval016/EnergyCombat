@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e051884d9b429b541ac62134955c7cd7
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 317431
+  packageName: Nodachi Sword Animation Pack
+  packageVersion: 1.0
+  assetPath: Assets/Nodachi Sword Animation Pack/Animations/Humanoid/01_Idle/04_Offset_Idle_Combat/Idle_Combat_Up_L.anim
+  uploadId: 862652

@@ -132,6 +132,10 @@ namespace Combat
             context.LoadAbilityTags();
             context.CurrentTarget = controller.CurrentTarget;
 
+            // Expose the context on the controller immediately so TryTriggerAbility can
+            // read combo-window tags that pipeline phases (e.g. RecoveryPhase) set during execution.
+            controller.SetActiveContext(context);
+
             if (ability.BaseStats != null)
             {
                 foreach (var entry in ability.BaseStats)

@@ -60,6 +60,17 @@ namespace Combat
         [Tooltip("MonoBehaviour implementing IAnimationDriver. Leave null to use NullAnimationDriver.")]
         [SerializeField] private MonoBehaviour _animationDriverSource;
 
+        /**
+         * <summary>
+         * Input timing configuration. Controls grace windows, combo transition timing,
+         * and attack-entry deceleration. Create via <c>Assets → Create → Combat → Input Settings</c>.
+         * Leave null to use built-in defaults.
+         * </summary>
+         */
+        [Header("Input")]
+        [Tooltip("Input timing config. Leave null to use built-in defaults.")]
+        [SerializeField] private CombatInputSettings _inputSettings;
+
         #endregion
 
         #region Subsystems
@@ -101,6 +112,18 @@ namespace Combat
          */
         public bool IsExecuting { get; private set; }
 
+        /**
+         * <summary>
+         * <c>true</c> once <see cref="PreOpenFollowUpCombo"/> has been called for the
+         * current execution, preventing repeated pre-opens every frame during recovery.
+         * Reset by <see cref="LaunchExecution"/>.
+         * </summary>
+         */
+        private bool _comboPreOpened;
+
+        /** <summary>Unscaled time at which the current ability began executing.</summary> */
+        private float _abilityStartTime;
+
         /** <summary>The execution context of the currently active ability, or null.</summary> */
         public CombatContext ActiveContext => _activeContext;
 
@@ -115,13 +138,41 @@ namespace Combat
 
         /**
          * <summary>
+         * Set to <c>true</c> when <see cref="DispatchCombatEvent"/> receives
+         * <see cref="CombatAnimationEvents.MovementResume"/>. Cleared in
+         * <see cref="LaunchExecution"/> so each new ability starts locked.
+         * </summary>
+         */
+        private bool _animationMovementResumed;
+
+        /**
+         * <summary>
          * <c>true</c> while an executing ability's <see cref="AnimationRequest"/> has
-         * <c>LockMovement = true</c>. Read by <see cref="DynamicPhysics.CombatMovementAbility"/>
-         * to activate the <see cref="DynamicPhysics.MotionTag.AttackMovementLocked"/> tag.
+         * <c>LockMovement = true</c> and the movement-resume animation event has not yet fired.
+         * Read by <see cref="DynamicPhysics.CombatMovementAbility"/> to activate the
+         * <see cref="DynamicPhysics.MotionTag.AttackMovementLocked"/> tag.
          * </summary>
          */
         public bool IsMovementLocked =>
-            IsExecuting && _activeContext?.Ability?.AnimationRequest?.LockMovement == true;
+            IsExecuting &&
+            _activeContext?.Ability?.AnimationRequest?.LockMovement == true &&
+            !_animationMovementResumed;
+
+        /**
+         * <summary>
+         * Exposes the input timing settings to subsystems such as
+         * <see cref="DynamicPhysics.CombatMovementAbility"/>.
+         * </summary>
+         */
+        public CombatInputSettings InputSettings => _inputSettings;
+
+        /**
+         * <summary>
+         * Read-only access to the ability selector. Exposed for the debug overlay
+         * so it can display combo state without reaching into private fields.
+         * </summary>
+         */
+        public AbilitySelector Selector => _selector;
 
         #endregion
 
@@ -129,7 +180,7 @@ namespace Combat
 
         private void Awake()
         {
-            InputBuffer = new CombatInputBuffer(16);
+            InputBuffer = new CombatInputBuffer(16, _inputSettings);
 
             _animationDriver = _animationDriverSource as IAnimationDriver
                                ?? new NullAnimationDriver();
@@ -141,7 +192,7 @@ namespace Combat
             }
 
             _modifiers = new ModifierContainer();
-            _selector = new AbilitySelector();
+            _selector = new AbilitySelector(_inputSettings);
 
             if (_defaultLoadouts != null)
                 foreach (var l in _defaultLoadouts)
@@ -154,6 +205,7 @@ namespace Combat
         {
             _modifiers.RemoveExpired();
             InputBuffer.PruneOlderThan(2f);
+            TryTriggerAbility();
         }
 
         private void OnDestroy()
@@ -290,6 +342,15 @@ namespace Combat
 
         #region Internal Execution
 
+        /**
+         * <summary>
+         * Called by <see cref="AbilityExecutor"/> immediately after the <see cref="CombatContext"/>
+         * is built, so that combo-window tags set by pipeline phases (e.g. <see cref="RecoveryPhase"/>)
+         * are readable via <see cref="_activeContext"/> during execution.
+         * </summary>
+         */
+        public void SetActiveContext(CombatContext context) => _activeContext = context;
+
         private void TryTriggerAbility()
         {
             bool comboWindowOpen = _activeContext != null &&
@@ -297,12 +358,27 @@ namespace Combat
 
             if (IsExecuting && !comboWindowOpen) return;
 
-            var ability = _selector.Resolve(InputBuffer, _activeContext);
-            if (ability == null) return;
+            // Pre-open the follow-up combo tree when the combo window is open.
+            // For animation-event-driven abilities this is already done in OpenComboWindow (via DispatchCombatEvent).
+            // For timer-based abilities (RecoveryPhase.AllowComboCancel = true) it runs here.
+            if (comboWindowOpen && !_comboPreOpened && !_selector.IsInCombo)
+            {
+                var followUpCombo = _activeContext?.Ability?.FollowUpCombo;
+                if (followUpCombo?.RootNode != null)
+                {
+                    _comboPreOpened = true;
+                    _selector.PreOpenFollowUpCombo(_activeContext.Ability);
+                }
+            }
+
+            var result = _selector.Resolve(InputBuffer, _activeContext);
+            if (result == null) return;
+            var ability = result.Value.Ability;
             if (!ability.AreConditionsMet(_activeContext ?? new CombatContext())) return;
 
             bool preserveCombo = IsExecuting &&
-                                 ability.InterruptBehavior == ComboInterruptBehavior.PreserveCombo;
+                (result.Value.WasComboTransition ||
+                 ability.InterruptBehavior == ComboInterruptBehavior.PreserveCombo);
 
             if (IsExecuting) CancelCurrentAbility();
 
@@ -314,8 +390,11 @@ namespace Combat
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
 
-            IsExecuting = true;
-            _activeContext = null;
+            _comboPreOpened          = false;
+            _abilityStartTime        = Time.unscaledTime;
+            _animationMovementResumed = false;
+            IsExecuting              = true;
+            _activeContext           = null;
 
             RunExecutionAsync(ability, preserveCombo, _cts.Token).Forget();
         }
@@ -336,6 +415,78 @@ namespace Combat
                 _cts?.Dispose();
                 _cts = null;
             }
+        }
+
+        #endregion
+
+        #region Animation Event Dispatch
+
+        /**
+         * <summary>
+         * Single entry point for all combat animation events. Called by
+         * <see cref="CombatAnimationEventReceiver.OnCombatEvent"/> when any combat event
+         * fires from a clip timeline.
+         * </summary>
+         *
+         * <remarks>
+         * Does two things on every call:
+         * <list type="number">
+         *   <item>
+         *     Forwards <paramref name="eventName"/> to the active <see cref="AnimationHandle"/>
+         *     so any pipeline phase awaiting that name via <c>WaitForEventAsync</c> unblocks.
+         *   </item>
+         *   <item>
+         *     Handles built-in gameplay signals by name using <see cref="CombatAnimationEvents"/>
+         *     constants (<c>ComboWindowOpen</c>, <c>ComboWindowClose</c>, <c>MovementResume</c>).
+         *   </item>
+         * </list>
+         *
+         * Custom phase event names (e.g. a unique plunge-land event) are forwarded automatically
+         * via the handle and require no changes here.
+         * </remarks>
+         *
+         * <param name="eventName">
+         * Event name string. Use <see cref="CombatAnimationEvents"/> constants to avoid typos.
+         * </param>
+         */
+        public void DispatchCombatEvent(string eventName)
+        {
+            // Unblock any pipeline phase awaiting this event name.
+            _activeContext?.Animation?.TriggerEvent(eventName);
+
+            // Handle built-in gameplay signals.
+            switch (eventName)
+            {
+                case CombatAnimationEvents.ComboWindowOpen:  OpenComboWindow();   break;
+                case CombatAnimationEvents.ComboWindowClose: CloseComboWindow();  break;
+                case CombatAnimationEvents.MovementResume:   ResumeMovement();    break;
+            }
+        }
+
+        private void OpenComboWindow()
+        {
+            if (_activeContext == null) return;
+            _activeContext.SetTag(CombatTag.ComboWindowOpen);
+
+            if (!_comboPreOpened && !_selector.IsInCombo)
+            {
+                var followUp = _activeContext.Ability?.FollowUpCombo;
+                if (followUp?.RootNode != null)
+                {
+                    _comboPreOpened = true;
+                    _selector.PreOpenFollowUpCombo(_activeContext.Ability);
+                }
+            }
+        }
+
+        private void CloseComboWindow()
+        {
+            _activeContext?.RemoveTag(CombatTag.ComboWindowOpen);
+        }
+
+        private void ResumeMovement()
+        {
+            _animationMovementResumed = true;
         }
 
         #endregion

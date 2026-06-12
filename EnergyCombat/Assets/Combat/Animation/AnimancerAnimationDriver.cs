@@ -29,7 +29,17 @@ namespace Combat
         [Tooltip("MotionOrchestrator on the player. Required for root-motion tag management.")]
         [SerializeField] private MotionOrchestrator _motionOrchestrator;
 
+        /**
+         * <summary>
+         * Input settings asset. Used to read <see cref="CombatInputSettings.CombatLayerFadeOutDuration"/>
+         * when fading the combat layer back to zero at ability end.
+         * </summary>
+         */
+        [Tooltip("Combat input settings asset. Drives animation blending durations.")]
+        [SerializeField] private CombatInputSettings _inputSettings;
+
         private AnimancerState _currentState;
+        private int _currentLayer;
 
         private void Awake()
         {
@@ -46,7 +56,8 @@ namespace Combat
                 return handle;
             }
 
-            _currentState = _animancer.Layers[request.Layer].Play(request.Clip, request.FadeInDuration);
+            _currentLayer = request.Layer;
+            _currentState = _animancer.Layers[_currentLayer].Play(request.Clip, request.FadeInDuration);
             _currentState.Speed = request.Speed;
 
             if (request.EventNames != null)
@@ -56,7 +67,15 @@ namespace Combat
                     _currentState.OwnedEvents.AddCallback(n, () => handle.TriggerEvent(n));
                 }
 
-            _currentState.OwnedEvents.OnEnd = () => handle.NotifyComplete();
+            // Capture a local reference so the closure does not hold onto the mutable field.
+            // Nulling OnEnd inside the callback prevents Animancer from re-firing it every
+            // frame after the clip reaches its end time (OptionalWarning.EndEventInterrupt).
+            var capturedState = _currentState;
+            _currentState.OwnedEvents.OnEnd = () =>
+            {
+                capturedState.OwnedEvents.OnEnd = null;
+                handle.NotifyComplete();
+            };
 
             if (request.UseRootMotion)
             {
@@ -70,14 +89,21 @@ namespace Combat
 
         public void Stop()
         {
+            // Disable root motion first so no delta is applied during the fade-out frame.
+            _animCtrl?.SetRootMotionActive(false);
+            _motionOrchestrator?.Context.RemoveTag(MotionTag.RootMotionDriven);
+
             if (_currentState != null)
             {
                 _currentState.OwnedEvents.OnEnd = null;
                 _currentState = null;
-            }
 
-            _animCtrl?.SetRootMotionActive(false);
-            _motionOrchestrator?.Context.RemoveTag(MotionTag.RootMotionDriven);
+                // Fade the layer weight smoothly to zero so locomotion blends back in
+                // rather than snapping. When a new ability Play() call immediately follows
+                // (combo chain), the new clip's fade-in overrides this automatically.
+                float fadeOut = _inputSettings != null ? _inputSettings.CombatLayerFadeOutDuration : 0.15f;
+                _animancer?.Layers[_currentLayer].StartFade(0f, fadeOut);
+            }
         }
 
         private static async UniTaskVoid TrackNormalizedTimeAsync(
@@ -85,7 +111,20 @@ namespace Combat
         {
             while (state != null && !handle.IsComplete && !token.IsCancellationRequested)
             {
-                handle.UpdateNormalizedTime(state.NormalizedTime);
+                // NormalizedTime triggers Animancer's internal AssertPlayable validation,
+                // which can throw ArgumentException when a new animation preempts this one
+                // and Animancer destroys the underlying Playable before this loop exits.
+                float normalizedTime;
+                try
+                {
+                    normalizedTime = state.NormalizedTime;
+                }
+                catch (System.ArgumentException)
+                {
+                    break;
+                }
+
+                handle.UpdateNormalizedTime(normalizedTime);
                 await UniTask.NextFrame(token);
             }
         }

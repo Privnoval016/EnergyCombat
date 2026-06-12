@@ -12,8 +12,13 @@ namespace DynamicPhysics
      * </summary>
      *
      * <remarks>
-     * This ability produces no velocity influence of its own — it acts purely as a tag setter
-     * so the rest of the pipeline can react to it. Deactivates as soon as the ability ends.
+     * On activation and each tick, horizontal velocity is bled off at the rate configured by
+     * <see cref="Combat.CombatInputSettings.AttackEntryDecelerationRate"/>:
+     * <list type="bullet">
+     *   <item><c>0</c> (default) — instant stop: the character plants immediately on attack start.</item>
+     *   <item>Positive value — smooth ramp-out over multiple <c>FixedUpdate</c> ticks, giving a
+     *     brief momentum-carry feel before the character fully commits to the attack stance.</item>
+     * </list>
      * </remarks>
      */
     public class CombatMovementAbility : IMotionAbility
@@ -40,13 +45,19 @@ namespace DynamicPhysics
         {
             IsActive = true;
             context.SetTag(MotionTag.AttackMovementLocked);
+            ApplyAttackEntryDeceleration(context);
         }
 
         /** <inheritdoc /> */
         public void Tick(MotionContext context, float deltaTime)
         {
             if (_combatController == null || !_combatController.IsMovementLocked)
+            {
                 Deactivate(context);
+                return;
+            }
+
+            ApplyAttackEntryDeceleration(context);
         }
 
         /** <inheritdoc /> */
@@ -57,6 +68,41 @@ namespace DynamicPhysics
         {
             IsActive = false;
             context.RemoveTag(MotionTag.AttackMovementLocked);
+        }
+
+        /**
+         * <summary>
+         * Removes horizontal velocity according to <see cref="Combat.CombatInputSettings.AttackEntryDecelerationRate"/>.
+         * Called on activation and each tick so the ramp-out continues across multiple frames.
+         * Skipped when root motion is driving position — the clip owns movement in that case.
+         * </summary>
+         */
+        private void ApplyAttackEntryDeceleration(MotionContext context)
+        {
+            if (context.HasTag(MotionTag.RootMotionDriven)) return;
+
+            float rate = _combatController.InputSettings?.AttackEntryDecelerationRate ?? 0f;
+            Vector3 vel = context.Velocity;
+            Vector2 horiz = new Vector2(vel.x, vel.z);
+            float speed = horiz.magnitude;
+            if (speed < 0.001f) return;
+
+            if (rate <= 0f)
+            {
+                context.Velocity = new Vector3(0f, vel.y, 0f);
+                return;
+            }
+
+            float remove = rate * context.DeltaTime;
+            if (remove >= speed)
+            {
+                context.Velocity = new Vector3(0f, vel.y, 0f);
+            }
+            else
+            {
+                Vector2 newHoriz = horiz * ((speed - remove) / speed);
+                context.Velocity = new Vector3(newHoriz.x, vel.y, newHoriz.y);
+            }
         }
     }
 }
