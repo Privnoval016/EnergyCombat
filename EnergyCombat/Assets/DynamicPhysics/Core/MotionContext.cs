@@ -74,6 +74,16 @@ namespace DynamicPhysics
         /** <summary>Multiplier applied to gravity this frame. Modified by modifiers and abilities.</summary> */
         public float GravityScale;
 
+        /**
+         * <summary>
+         * When greater than zero, overrides <see cref="SpeedLimitConstraint.MaxSpeed"/> for this
+         * and subsequent frames. Set by ability phases (e.g. <see cref="Combat.LoopUntilGroundedPhase"/>)
+         * to allow plunge speeds above the global cap. Must be cleared in the phase's finally block.
+         * Not reset each tick — persists until explicitly zeroed.
+         * </summary>
+         */
+        public float SpeedCapOverride;
+
         /** <summary>Cached Rigidbody mass for force-to-acceleration conversion.</summary> */
         public float Mass;
 

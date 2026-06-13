@@ -76,6 +76,9 @@ namespace Combat
 
             AbilityPipeline pipeline = BuildPipeline(ability, context);
 
+            // Expose the driver so loop phases can cross-fade to a new clip mid-ability.
+            context.AnimationDriver = _animationDriver;
+
             try
             {
                 if (ability.AnimationRequest?.Clip != null)

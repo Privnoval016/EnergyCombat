@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eda1b211d84d46a0b92786b587f49c4, type: 3}
+  m_Name: RunningAtk_Start
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.AbilityDefinition
+  AbilityName: Running Attack Start
+  Tags:
+  - _value: Melee
+  PrimaryInput: 0
+  RequireHold: 1
+  HoldThreshold: 0.2
+  Conditions:
+  - rid: 6570460796744368641
+  - rid: 6570460801612644495
+  BaseStats: []
+  AnimationRequest:
+    Clip: {fileID: 7400000, guid: 5966bd6bf82ee4a04ae9b10cef6fd63b, type: 2}
+    Speed: 1
+    UseRootMotion: 0
+    LockMovement: 0
+    Layer: 0
+    FadeInDuration: 0.1
+    Loop: 0
+    EventNames: []
+  Phases:
+  - rid: 6570460796744368642
+  - rid: 6570460796744368643
+  - rid: 6570460796744368644
+  FollowUpCombo: {fileID: 11400000, guid: 1e636e996d26b4bee8e55c5d17fa2686, type: 2}
+  InterruptBehavior: 0
+  OverrideAerialGravity: 0
+  AerialGravityScaleOverride: 0.2
+  EnableTargetPull: 0
+  TargetPullForce: 6
+  TargetPullRange: 3
+  references:
+    version: 2
+    RefIds:
+    - rid: 6570460796744368641
+      type: {class: SprintingCondition, ns: Combat, asm: Assembly-CSharp}
+      data: 
+    - rid: 6570460796744368642
+      type: {class: StartupPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        StartupEndEvent: StartupEnd
+        FallbackDuration: 0.25
+    - rid: 6570460796744368643
+      type: {class: ActivePhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        ActiveEndEvent: ActiveEnd
+        FallbackDuration: 0.2
+        Hitboxes: []
+    - rid: 6570460796744368644
+      type: {class: RecoveryPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        RecoveryEndEvent: RecoveryEnd
+        FallbackDuration: 0.3
+        AllowComboCancel: 1
+    - rid: 6570460801612644495
+      type: {class: GroundedCondition, ns: Combat, asm: Assembly-CSharp}
+      data: 

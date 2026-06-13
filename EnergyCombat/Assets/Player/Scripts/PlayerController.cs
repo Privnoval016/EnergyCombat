@@ -40,6 +40,18 @@ public class PlayerController : MonoBehaviour, ILocomotionState
     private bool _sprintPressed;
     private bool _landingBoostPending;
 
+    // Chord detection — tracks when each combat button was last pressed so PlayerController
+    // can synthesise a LightHeavyChord event when both arrive within ChordDetectionWindow.
+    private float _lastLightPressTime = float.NegativeInfinity;
+    private float _lastHeavyPressTime = float.NegativeInfinity;
+    private bool  _chordActive        = false;
+
+    // Sprint-light deferred push — when L is pressed while sprinting we can't know at press
+    // time whether it's a tap (basic attack) or hold (running attack). The Started event is
+    // held here and pushed only once intent is clear: on release = tap, after threshold = hold.
+    private bool  _pendingSprintLight   = false;
+    private float _sprintLightPressTime = float.NegativeInfinity;
+
     public StateMachine<PlayerController> StateMachine { get; private set; }
     public MotionOrchestrator MotionOrchestrator => motionOrchestrator;
     public CameraController CameraController => cameraController;
@@ -211,6 +223,11 @@ public class PlayerController : MonoBehaviour, ILocomotionState
         StateMachine.Start();
     }
 
+    private void Update()
+    {
+        TickSprintLightBuffer();
+    }
+
     private void OnEnable()
     {
         _playerInputAdapter?.Enable();
@@ -320,17 +337,123 @@ public class PlayerController : MonoBehaviour, ILocomotionState
 
         CombatInputPhase phase = buttonEvent.Phase switch
         {
-            PlayerInputPhase.Started => CombatInputPhase.Started,
+            PlayerInputPhase.Started   => CombatInputPhase.Started,
             PlayerInputPhase.Performed => CombatInputPhase.Performed,
-            PlayerInputPhase.Canceled => CombatInputPhase.Canceled,
+            PlayerInputPhase.Canceled  => CombatInputPhase.Canceled,
             _ => CombatInputPhase.Performed
         };
 
-        combatController.PushInput(new CombatInputEvent(
-            combatButton.Value,
-            phase,
-            UnityEngine.Time.unscaledTime
-        ));
+        float now = UnityEngine.Time.unscaledTime;
+
+        // Record press times for chord detection — but ONLY when L is not about to be deferred.
+        // If _lastLightPressTime were set for a deferred L, a subsequent H within the chord window
+        // would falsely fire a chord even though L was never pushed to the combat buffer.
+        if (phase == CombatInputPhase.Started)
+        {
+            bool lightWillBeDeferred = combatButton == CombatInputButton.LightAttack && IsSprinting;
+
+            if (combatButton == CombatInputButton.LightAttack && !lightWillBeDeferred)
+                _lastLightPressTime = now;
+            if (combatButton == CombatInputButton.HeavyAttack)
+                _lastHeavyPressTime = now;
+
+            // Chord detection is skipped when L is being deferred. Sprint+L then H within the
+            // window is treated as a solo H attack, not a chord.
+            if (!lightWillBeDeferred)
+            {
+                float window = combatController.InputSettings?.ChordDetectionWindow ?? 0.08f;
+                if (!_chordActive
+                    && now - _lastLightPressTime < window
+                    && now - _lastHeavyPressTime < window)
+                {
+                    _chordActive        = true;
+                    _pendingSprintLight = false;
+
+                    combatController.InputBuffer.ConsumeInput(CombatInputButton.LightAttack);
+                    combatController.InputBuffer.ConsumeInput(CombatInputButton.HeavyAttack);
+
+                    if (combatController.IsExecuting)
+                    {
+                        var runningInput = combatController.ActiveContext?.Ability?.PrimaryInput;
+                        if (runningInput == CombatInputButton.LightAttack
+                            || runningInput == CombatInputButton.HeavyAttack)
+                            combatController.CancelCurrentAbility();
+                    }
+
+                    combatController.PushInput(new CombatInputEvent(
+                        CombatInputButton.LightHeavyChord,
+                        CombatInputPhase.Started,
+                        now));
+                    return; // Prevent the individual button press from also reaching the buffer.
+                }
+            }
+        }
+
+        // Suppress Performed hold-continuations for constituent buttons while chord is active.
+        // If a constituent's Started was blocked by the chord return, the buffer's IsHeld stays
+        // false. A Performed from the Input System would then be treated as a fresh press
+        // (Performed when !IsHeld resets ConsumedTime = -inf), making HasRecentInput true for a
+        // follow-up attack after the chord completes.
+        if (phase == CombatInputPhase.Performed && _chordActive
+            && (combatButton == CombatInputButton.LightAttack
+                || combatButton == CombatInputButton.HeavyAttack))
+            return;
+
+        // Mirror release: cancel the chord the moment either constituent button is released so
+        // GetHoldDuration(LightHeavyChord) stops accumulating, enabling hold-chord abilities.
+        if (phase == CombatInputPhase.Canceled && _chordActive)
+        {
+            _chordActive = false;
+            combatController.PushInput(new CombatInputEvent(
+                CombatInputButton.LightHeavyChord,
+                CombatInputPhase.Canceled,
+                now));
+        }
+
+        // Sprint-light disambiguation: defer pushing LightAttack.Started while sprinting until
+        // we know if it's a tap (basic attack) or hold (running attack).
+        if (combatButton == CombatInputButton.LightAttack)
+        {
+            if (phase == CombatInputPhase.Started && IsSprinting)
+            {
+                _pendingSprintLight   = true;
+                _sprintLightPressTime = now;
+                return; // Pushed later by TickSprintLightBuffer or on release.
+            }
+
+            // Suppress hold-continuation events while the tap/hold decision is pending.
+            // Without this, the Performed event would register an immediate press in the buffer
+            // and CombatController.Update would resolve LAtk_1 before the threshold elapses.
+            if (phase == CombatInputPhase.Performed && _pendingSprintLight)
+                return;
+
+            if (phase == CombatInputPhase.Canceled && _pendingSprintLight)
+            {
+                // Released before hold threshold — it was a tap. Resolve basic attack.
+                _pendingSprintLight = false;
+                _lastLightPressTime = _sprintLightPressTime; // Record so future chords see the real press time.
+                combatController.PushInput(new CombatInputEvent(
+                    CombatInputButton.LightAttack, CombatInputPhase.Started, _sprintLightPressTime));
+                // Fall through to also push Canceled so IsHeld is cleared correctly.
+            }
+        }
+
+        combatController.PushInput(new CombatInputEvent(combatButton.Value, phase, now));
+    }
+
+    private void TickSprintLightBuffer()
+    {
+        if (!_pendingSprintLight || combatController == null) return;
+        float threshold = combatController.InputSettings?.SprintLightHoldThreshold ?? 0.2f;
+        if (Time.unscaledTime - _sprintLightPressTime >= threshold)
+        {
+            // Held long enough — push with original timestamp so GetHoldDuration reflects actual
+            // hold duration and the running attack's RequireHold check evaluates correctly.
+            _lastLightPressTime = _sprintLightPressTime; // Record so future chords see the real press time.
+            combatController.PushInput(new CombatInputEvent(
+                CombatInputButton.LightAttack, CombatInputPhase.Started, _sprintLightPressTime));
+            _pendingSprintLight = false;
+        }
     }
 
     private InputThresholdSettings InputThresholds =>

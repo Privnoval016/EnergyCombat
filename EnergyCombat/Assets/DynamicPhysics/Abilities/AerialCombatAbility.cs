@@ -174,9 +174,17 @@ namespace DynamicPhysics
         {
             float profileScale = ProfileGravityScale;
 
+            // Phase-level override takes precedence (e.g. LoopUntilGroundedPhase sets fast-fall
+            // gravity while the startup frames use the ability-level setting of 0 to hang in air).
+            var phaseOverride = _lastContext?.PhaseAerialGravityOverride;
+            if (phaseOverride.HasValue)
+                return Mathf.Max(0f, phaseOverride.Value) / profileScale;
+
             if (ability != null && ability.OverrideAerialGravity)
             {
-                float abs = Mathf.Clamp01(ability.AerialGravityScaleOverride);
+                // Allow values > 1 so plunge attacks can fall faster than normal gravity.
+                // Range is enforced by the [Range(0f,3f)] attribute on AbilityDefinition.
+                float abs = Mathf.Max(0f, ability.AerialGravityScaleOverride);
                 return abs / profileScale;
             }
 

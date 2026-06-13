@@ -24,7 +24,7 @@ MonoBehaviour:
   AnimationRequest:
     Clip: {fileID: 7400000, guid: 0d52da9382e8b4ac4bcc3ba2d7b7623e, type: 2}
     Speed: 1
-    UseRootMotion: 0
+    UseRootMotion: 1
     LockMovement: 1
     Layer: 0
     FadeInDuration: 0.1
@@ -36,6 +36,11 @@ MonoBehaviour:
   - rid: 2379993598603296950
   FollowUpCombo: {fileID: 0}
   InterruptBehavior: 1
+  OverrideAerialGravity: 0
+  AerialGravityScaleOverride: 0.2
+  EnableTargetPull: 0
+  TargetPullForce: 6
+  TargetPullRange: 3
   references:
     version: 2
     RefIds:

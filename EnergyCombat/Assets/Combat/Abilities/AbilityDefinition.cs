@@ -170,8 +170,8 @@ namespace Combat
          * is <c>true</c>. <c>0</c> = weightless, <c>1</c> = normal gravity.
          * </summary>
          */
-        [Tooltip("Gravity scale for this ability when airborne. 0 = weightless, 1 = normal. Only used when Override Aerial Gravity is enabled.")]
-        [Range(0f, 1f)]
+        [Tooltip("Gravity scale for this ability when airborne. 0 = weightless, 1 = normal gravity, >1 = fast fall (e.g. 2 for plunge attacks). Only used when Override Aerial Gravity is enabled.")]
+        [Range(0f, 3f)]
         public float AerialGravityScaleOverride = 0.2f;
 
         #endregion

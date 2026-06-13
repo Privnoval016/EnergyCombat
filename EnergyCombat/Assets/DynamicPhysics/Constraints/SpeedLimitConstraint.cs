@@ -30,12 +30,13 @@ namespace DynamicPhysics
          */
         public void Enforce(MotionContext context)
         {
+            float cap    = context.SpeedCapOverride > 0f ? context.SpeedCapOverride : MaxSpeed;
             float sqrMag = context.Velocity.sqrMagnitude;
-            float maxSqr = MaxSpeed * MaxSpeed;
+            float maxSqr = cap * cap;
 
             if (sqrMag > maxSqr)
             {
-                context.Velocity *= MaxSpeed / Mathf.Sqrt(sqrMag);
+                context.Velocity *= cap / Mathf.Sqrt(sqrMag);
             }
         }
     }

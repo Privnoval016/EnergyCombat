@@ -228,5 +228,41 @@ namespace Combat
         public float CombatLayerFadeOutDuration = 0.15f;
 
         #endregion
+
+        #region Sprint Light Attack
+
+        /**
+         * <summary>
+         * Seconds <see cref="CombatInputButton.LightAttack"/> must be held while sprinting
+         * before the running attack fires instead of the basic light attack.
+         * A press+release shorter than this threshold is treated as a tap and resolves the
+         * basic attack. Must match <c>HoldThreshold</c> on the running attack
+         * <see cref="AbilityDefinition"/> so the two agree on what counts as "held".
+         * </summary>
+         */
+        [Header("Sprint Light Attack")]
+        [Tooltip("Seconds L must be held while sprinting before the running attack fires. Shorter presses fire the basic attack. Must match HoldThreshold on the RunningAttack ability.")]
+        [Range(0.05f, 0.5f)]
+        public float SprintLightHoldThreshold = 0.2f;
+
+        #endregion
+
+        #region Chord Input
+
+        /**
+         * <summary>
+         * Seconds within which both <see cref="CombatInputButton.LightAttack"/> and
+         * <see cref="CombatInputButton.HeavyAttack"/> must be pressed to register a
+         * <see cref="CombatInputButton.LightHeavyChord"/> event.
+         * Smaller values require more precise simultaneous timing; 0.08 is forgiving
+         * without producing accidental chords from quick alternating presses.
+         * </summary>
+         */
+        [Header("Chord Input")]
+        [Tooltip("Seconds within which both Light and Heavy must be pressed to register a LightHeavyChord event. 0.06–0.12 works well.")]
+        [Range(0f, 0.3f)]
+        public float ChordDetectionWindow = 0.08f;
+
+        #endregion
     }
 }

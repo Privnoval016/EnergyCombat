@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: KatanaLoadout
   m_EditorClassIdentifier: Assembly-CSharp::Combat.AbilityLoadout
   ActiveAbilities:
+  - {fileID: 11400000, guid: 0e0f436b1ec104c3f8408473d32afb79, type: 2}
+  - {fileID: 11400000, guid: 3a112bd004f854f3eb741fe9151acedb, type: 2}
+  - {fileID: 11400000, guid: b423ef77c4f0145f890a6e60ccd341b8, type: 2}
   - {fileID: 11400000, guid: fee8eae93ae284d9cbfa040dd34072be, type: 2}
   - {fileID: 11400000, guid: 95cae2612385e4ce48c1029a4b0bded7, type: 2}
   - {fileID: 11400000, guid: 2fa530eb1e84c4f6db9fbf2241343e02, type: 2}

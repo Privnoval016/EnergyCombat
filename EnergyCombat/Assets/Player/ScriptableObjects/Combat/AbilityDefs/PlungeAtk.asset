@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eda1b211d84d46a0b92786b587f49c4, type: 3}
+  m_Name: PlungeAtk
+  m_EditorClassIdentifier: Assembly-CSharp::Combat.AbilityDefinition
+  AbilityName: 
+  Tags: []
+  PrimaryInput: 1
+  RequireHold: 0
+  HoldThreshold: 0.3
+  Conditions:
+  - rid: 6570460796744368589
+  BaseStats: []
+  AnimationRequest:
+    Clip: {fileID: 7400000, guid: 40e3b9f17fff346d3863365185a64ae0, type: 2}
+    Speed: 1
+    UseRootMotion: 0
+    LockMovement: 1
+    Layer: 0
+    FadeInDuration: 0.1
+    Loop: 0
+    EventNames: []
+  Phases:
+  - rid: 6570460796744368590
+  - rid: 6570460796744368591
+  - rid: 6570460796744368592
+  - rid: 6570460796744368593
+  - rid: 6570460796744368594
+  FollowUpCombo: {fileID: 0}
+  InterruptBehavior: 0
+  OverrideAerialGravity: 1
+  AerialGravityScaleOverride: 0
+  EnableTargetPull: 0
+  TargetPullForce: 6
+  TargetPullRange: 3
+  references:
+    version: 2
+    RefIds:
+    - rid: 6570460796744368589
+      type: {class: AirborneCondition, ns: Combat, asm: Assembly-CSharp}
+      data: 
+    - rid: 6570460796744368590
+      type: {class: StartupPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        StartupEndEvent: StartupEnd
+        FallbackDuration: 0.25
+    - rid: 6570460796744368591
+      type: {class: SelfImpulsePhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName:
+        Impulse: {x: 0, y: -50, z: 0}
+        UseCharacterOrientation: 0
+    - rid: 6570460796744368592
+      type: {class: LoopUntilGroundedPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName:
+        LoopClip: {fileID: 7400000, guid: 0b45e6e1445534eba93e78da99c03267, type: 2}
+        LoopFadeIn: 0.1
+        ExitClip: {fileID: 7400000, guid: 1014481b5db124eec9e67613065ef7d1, type: 2}
+        ExitFadeIn: 0.05
+        MinPlungeSpeed: 50
+        MaxDuration: 12
+        PlungeGravityScale: 6
+        PlungeSpeedCap: 150
+    - rid: 6570460796744368593
+      type: {class: ActivePhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        ActiveEndEvent: ActiveEnd
+        FallbackDuration: 0.2
+        Hitboxes: []
+    - rid: 6570460796744368594
+      type: {class: RecoveryPhase, ns: Combat, asm: Assembly-CSharp}
+      data:
+        PhaseName: 
+        RecoveryEndEvent: RecoveryEnd
+        FallbackDuration: 0.3
+        AllowComboCancel: 1

@@ -226,10 +226,22 @@ namespace DynamicPhysics
          * <summary>
          * Adds an immediate velocity impulse (bypasses force integration).
          * </summary>
+         *
+         * <remarks>
+         * Also writes directly to the Rigidbody so that impulses applied from UniTask
+         * continuations (which run after <see cref="PhysicsMotor.ApplyVelocity"/>) survive the
+         * next <see cref="PhysicsMotor.SnapshotState"/> call, which otherwise overwrites
+         * <see cref="MotionContext.Velocity"/> with the stale rigidbody value.
+         * For in-pipeline impulses (called during FixedUpdate) the direct rigidbody write is
+         * harmless — <see cref="PhysicsMotor.ApplyVelocity"/> overwrites it with the pipeline
+         * result anyway.
+         * </remarks>
          */
         public void AddImpulse(Vector3 impulse)
         {
             _context.Velocity += impulse;
+            if (_rigidbody != null)
+                _rigidbody.linearVelocity += impulse;
         }
 
         #endregion

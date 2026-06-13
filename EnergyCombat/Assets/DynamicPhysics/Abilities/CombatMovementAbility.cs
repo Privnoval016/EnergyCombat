@@ -128,8 +128,9 @@ namespace DynamicPhysics
          */
         private void ApplyAttackEntryDeceleration(MotionContext context)
         {
-            if (context.HasTag(MotionTag.RootMotionDriven)) return;
-
+            // Root motion drives the character's animation-based position changes, but the
+            // physics velocity must still be zeroed when LockMovement is true — otherwise
+            // sprint momentum adds on top of root motion and the character overshoots.
             float rate = _combatController.InputSettings?.AttackEntryDecelerationRate ?? 0f;
             Vector3 vel = context.Velocity;
             Vector2 horiz = new Vector2(vel.x, vel.z);

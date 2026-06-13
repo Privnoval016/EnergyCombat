@@ -61,6 +61,31 @@ namespace Combat
          */
         public AnimationHandle Animation;
 
+        /**
+         * <summary>
+         * The animation driver used for this execution.
+         * Assigned by <c>AbilityExecutor</c> before the pipeline begins so that loop phases
+         * (<see cref="LoopUntilGroundedPhase"/>, <see cref="LoopWhileInputConditionPhase"/>)
+         * can cross-fade to a different clip mid-ability and update <see cref="Animation"/>
+         * so subsequent phases await the correct handle.
+         * </summary>
+         */
+        public IAnimationDriver AnimationDriver;
+
+        #endregion
+
+        #region Aerial Physics
+
+        /**
+         * <summary>
+         * Per-phase aerial gravity override. Set by a phase (e.g. <see cref="LoopUntilGroundedPhase"/>)
+         * to temporarily replace <see cref="AbilityDefinition.AerialGravityScaleOverride"/> for the
+         * duration of that phase. <c>null</c> = use the ability-level setting.
+         * Must be cleared in the phase's <c>finally</c> block.
+         * </summary>
+         */
+        public float? PhaseAerialGravityOverride;
+
         #endregion
 
         #region Execution Control

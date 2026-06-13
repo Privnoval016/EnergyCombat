@@ -19,6 +19,16 @@ namespace Combat
         LightAttack,
 
         /** <summary>Heavy or charged attack input.</summary> */
-        HeavyAttack
+        HeavyAttack,
+
+        /**
+         * <summary>
+         * Synthetic chord input synthesised by <c>PlayerController</c> when both
+         * <see cref="LightAttack"/> and <see cref="HeavyAttack"/> are pressed within
+         * <see cref="CombatInputSettings.ChordDetectionWindow"/> seconds of each other.
+         * Use as <c>PrimaryInput</c> on any ability that should require both buttons simultaneously.
+         * </summary>
+         */
+        LightHeavyChord
     }
 }

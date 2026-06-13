@@ -24,7 +24,7 @@ MonoBehaviour:
   AnimationRequest:
     Clip: {fileID: 7400000, guid: 1cce9bf426d0c4cd98c778f15bbaac50, type: 2}
     Speed: 1
-    UseRootMotion: 0
+    UseRootMotion: 1
     LockMovement: 1
     Layer: 0
     FadeInDuration: 0.1
