@@ -25,6 +25,7 @@ namespace Combat
 
         /** <summary>Human-readable name shown in the debug overlay and editor.</summary> */
         [Header("Identity")]
+        [Tooltip("Display name shown in the debug overlay and editor. No gameplay effect.")]
         public string AbilityName;
 
         /**
@@ -33,6 +34,7 @@ namespace Combat
          * Examples: <c>CombatTag.Melee</c>, <c>CombatTag.Fire</c>.
          * </summary>
          */
+        [Tooltip("Tags attached to every execution of this ability (e.g. Melee, Fire, Unblockable). Used by conditions and modifiers to filter or buff this move.")]
         public Tag[] Tags;
 
         #endregion
@@ -41,6 +43,7 @@ namespace Combat
 
         /** <summary>The combat button that triggers this ability when no combo context overrides it.</summary> */
         [Header("Input")]
+        [Tooltip("Button that triggers this ability from idle or when no active combo transition matches. Combos can override this with their own button per-transition.")]
         public CombatInputButton PrimaryInput;
 
         /**
@@ -49,10 +52,11 @@ namespace Combat
          * Otherwise a tap suffices.
          * </summary>
          */
+        [Tooltip("Require the player to hold the button rather than tap it. Useful for charged or powered-up versions of an attack.")]
         public bool RequireHold;
 
         /** <summary>Seconds the button must be held. Only evaluated when <see cref="RequireHold"/> is true.</summary> */
-        [Tooltip("Seconds button must be held. Only used when RequireHold = true.")]
+        [Tooltip("Seconds the button must be held before this ability triggers. Only evaluated when Require Hold is enabled.")]
         public float HoldThreshold = 0.3f;
 
         #endregion
@@ -68,6 +72,7 @@ namespace Combat
          * </summary>
          */
         [Header("Conditions")]
+        [Tooltip("All conditions must pass before this ability can execute. Common options: GroundedCondition, AirborneCondition, SprintingCondition. AND / OR / NOT composition is supported.")]
         [SerializeReference]
         public ICondition<CombatContext>[] Conditions;
 
@@ -83,6 +88,7 @@ namespace Combat
          * </summary>
          */
         [Header("Stats")]
+        [Tooltip("Base stat values for this move (Damage, Range, Knockback, etc.). Runtime modifiers from equipped items or buffs are layered on top of these values.")]
         public AbilityStatEntry[] BaseStats;
 
         #endregion
@@ -97,6 +103,7 @@ namespace Combat
          * </summary>
          */
         [Header("Animation")]
+        [Tooltip("Clip and playback settings for this ability. Leave Clip empty to prototype the move without animation — the pipeline phases still run using their fallback timers.")]
         public AnimationRequest AnimationRequest;
 
         #endregion
@@ -112,6 +119,7 @@ namespace Combat
          * </summary>
          */
         [Header("Pipeline")]
+        [Tooltip("Ordered execution timeline. Add phases in sequence: Startup (wind-up frames) → Active (hitbox window) → Recovery (return to neutral). Each phase runs until its animation event fires or its fallback timer elapses.")]
         [SerializeReference]
         public AbilityPhase[] Phases;
 
@@ -127,6 +135,7 @@ namespace Combat
          * </summary>
          */
         [Header("Combo")]
+        [Tooltip("Combo tree that becomes available after this ability lands. Assign a Combo Definition asset. Leave empty if this move does not start a chain.")]
         public ComboDefinition FollowUpCombo;
 
         /**
@@ -136,6 +145,7 @@ namespace Combat
          * so the primary combo window stays open.
          * </summary>
          */
+        [Tooltip("BreakCombo (default): firing this ability resets any active combo chain. PreserveCombo: the chain stays alive — use for dodges or off-hand actions that shouldn't cancel the main combo.")]
         public ComboInterruptBehavior InterruptBehavior = ComboInterruptBehavior.BreakCombo;
 
         #endregion

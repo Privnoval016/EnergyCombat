@@ -81,6 +81,34 @@ namespace Combat
          */
         private bool _preOpened;
 
+        /**
+         * <summary>
+         * Set by <see cref="NotifyComboTransitionPending"/> immediately before
+         * <c>CombatController</c> cancels the current execution for a deliberate combo
+         * chain advance. When the cancelled execution's <c>finally</c> subsequently
+         * calls <see cref="OnAbilityInterrupted"/>, this flag suppresses <see cref="ResetCombo"/>
+         * so the combo state that <see cref="TryResolveCombo"/> just established is preserved.
+         * Cleared by every selector notification and by <see cref="ResetCombo"/>.
+         * </summary>
+         */
+        private bool _comboTransitionPending;
+
+        /**
+         * <summary>
+         * The <see cref="ComboNode.ComboWindowDuration"/> of the node that was last resolved
+         * via <see cref="TryResolveCombo"/>, deferred until the executing ability completes.
+         * <para>
+         * Storing the duration here — and calling <see cref="OpenComboWindow"/> only in the
+         * completion notification — ensures the expiry window starts <em>after</em> the ability
+         * finishes, not at the moment the input was pressed. This prevents the timer from
+         * counting down during a long animation and expiring before recovery opens.
+         * </para>
+         * <c>-1</c> when no deferred window is pending (sentinel).
+         * Cleared by <see cref="ResetCombo"/> and the completion notifications.
+         * </summary>
+         */
+        private float _pendingComboWindowDuration = -1f;
+
         // ── Construction ──────────────────────────────────────────────────────
 
         /**
@@ -229,6 +257,7 @@ namespace Combat
          */
         public void OnAbilityCompleted(AbilityDefinition executed)
         {
+            _comboTransitionPending = false;
             _interruptCount = 0;
             _preOpened      = false;
 
@@ -238,12 +267,20 @@ namespace Combat
                 _currentNodeIndex  = 0;
                 OpenComboWindow(_currentDefinition.Nodes[0].ComboWindowDuration);
             }
+            else if (_pendingComboWindowDuration >= 0f)
+            {
+                // Mid-combo node that completed on the preserveCombo=false path (pressed while
+                // not executing). TryResolveCombo deferred the window; open it now so the
+                // player has time to chain the next hit after the animation finishes.
+                OpenComboWindow(_pendingComboWindowDuration);
+                _pendingComboWindowDuration = -1f;
+            }
             else if (_currentDefinition != null &&
                      _comboWindowTimer.IsRunning &&
                      !_comboWindowTimer.IsFinished)
             {
-                // Mid-combo ability (no FollowUpCombo of its own): the next window was
-                // already opened by TryResolveCombo when this ability was resolved.
+                // Window was already opened by an earlier OpenComboWindow call and hasn't
+                // expired yet — preserve it (e.g. starter follow-up window still ticking).
             }
             else
             {
@@ -251,8 +288,32 @@ namespace Combat
             }
         }
 
-        /** <summary>Called when an execution is interrupted with <see cref="ComboInterruptBehavior.BreakCombo"/>. Resets the combo immediately.</summary> */
-        public void OnAbilityInterrupted() => ResetCombo();
+        /**
+         * <summary>
+         * Signals that the currently executing ability is about to be cancelled deliberately
+         * to advance a combo chain. Must be called before
+         * <c>CombatController.CancelCurrentAbility()</c> so that the cancelled ability's
+         * <see cref="OnAbilityInterrupted"/> does not undo the combo state that
+         * <c>TryResolveCombo</c> just set up.
+         * </summary>
+         */
+        public void NotifyComboTransitionPending() => _comboTransitionPending = true;
+
+        /**
+         * <summary>
+         * Called when an execution is interrupted with <see cref="ComboInterruptBehavior.BreakCombo"/>.
+         * Resets the combo immediately, unless <see cref="NotifyComboTransitionPending"/> was
+         * called first — in that case the interruption is a deliberate combo advance and the
+         * chain state is preserved.
+         * </summary>
+         */
+        public void OnAbilityInterrupted()
+        {
+            bool wasTransition = _comboTransitionPending;
+            _comboTransitionPending = false;
+            if (!wasTransition)
+                ResetCombo();
+        }
 
         /**
          * <summary>
@@ -263,7 +324,20 @@ namespace Combat
          */
         public void OnAbilityComboPreserved()
         {
+            // Read before clearing: true means this execution was cancelled to chain the next hit.
+            bool cancelledForTransition = _comboTransitionPending;
+            _comboTransitionPending = false;
             _interruptCount++;
+
+            // Only open the post-execution window on natural completion.
+            // If the ability was cancelled to advance the chain, the next TryResolveCombo
+            // already stored a new _pendingComboWindowDuration for the incoming ability.
+            if (!cancelledForTransition && _pendingComboWindowDuration >= 0f)
+            {
+                OpenComboWindow(_pendingComboWindowDuration);
+                _pendingComboWindowDuration = -1f;
+            }
+
             if (_currentDefinition != null &&
                 _currentDefinition.MaxConcurrentInterrupts > 0 &&
                 _interruptCount >= _currentDefinition.MaxConcurrentInterrupts)
@@ -272,13 +346,15 @@ namespace Combat
             }
         }
 
-        /** <summary>Resets the combo pointer, pre-open flag, counter, and stops the window timer.</summary> */
+        /** <summary>Resets the combo pointer, pre-open flag, counter, pending window, and stops the timer.</summary> */
         public void ResetCombo()
         {
-            _currentDefinition = null;
-            _currentNodeIndex  = -1;
-            _interruptCount    = 0;
-            _preOpened         = false;
+            _currentDefinition           = null;
+            _currentNodeIndex            = -1;
+            _interruptCount              = 0;
+            _preOpened                   = false;
+            _comboTransitionPending      = false;
+            _pendingComboWindowDuration  = -1f;
             _comboWindowTimer.Stop();
         }
 
@@ -303,21 +379,24 @@ namespace Combat
                 if (targetNode?.Ability != null &&
                     !targetNode.Ability.AreConditionsMet(context ?? new CombatContext())) continue;
 
-                _interruptCount = 0;
+                _interruptCount   = 0;
                 _currentNodeIndex = transition.TargetNodeIndex;
-                _lastInputTime = now;
+                _lastInputTime    = now;
 
                 if (_currentNodeIndex >= 0 && targetNode != null)
                 {
-                    OpenComboWindow(targetNode.ComboWindowDuration);
-                    // Consume the input so this press doesn't re-fire on subsequent frames.
+                    // Defer the window timer: store the duration and stop any running timer so
+                    // IsInCombo stays true during execution. OpenComboWindow is called in
+                    // OnAbilityComboPreserved / OnAbilityCompleted once the ability finishes.
+                    _pendingComboWindowDuration = targetNode.ComboWindowDuration;
+                    _comboWindowTimer.Stop();
                     buffer.ConsumeInput(transition.Button);
                     return new ResolveResult(targetNode.Ability, wasComboTransition: true);
                 }
                 else
                 {
-                    // Terminal transition: reset combo but do NOT consume the input.
-                    // It must fall through to TryResolveFromLoadouts to restart from the starter.
+                    // Terminal transition (TargetNodeIndex = -1): reset the chain and let the
+                    // input fall through to TryResolveFromLoadouts to restart from a starter.
                     ResetCombo();
                     return null;
                 }

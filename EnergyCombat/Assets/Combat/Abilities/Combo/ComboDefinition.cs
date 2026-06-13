@@ -33,6 +33,7 @@ namespace Combat
          * Add entries via the Inspector list; order matters — transitions reference by index.
          * </summary>
          */
+        [Tooltip("All combo steps in order. Index 0 is the first follow-up after the starter. Add nodes here, then wire them together using TargetNodeIndex on each transition. Order is permanent once transitions are set — insert new nodes at the end.")]
         public List<ComboNode> Nodes;
 
         /**
@@ -42,7 +43,7 @@ namespace Combat
          * <c>0</c> means unlimited — the combo window timer is the only reset condition.
          * </summary>
          */
-        [Tooltip("0 = unlimited. How many PreserveCombo interrupts are allowed before the combo resets.")]
+        [Tooltip("How many PreserveCombo abilities (dodges, off-hand hits) can fire before the combo chain auto-resets. 0 = unlimited — only the expiry timer resets the chain. Increase this to cap how many times the player can weave off-hand moves without the combo counting it against them.")]
         public int MaxConcurrentInterrupts = 0;
 
         /** <summary>Returns the root node, or <c>null</c> if the list is empty.</summary> */

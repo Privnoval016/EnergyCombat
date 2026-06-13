@@ -114,12 +114,18 @@ namespace Combat
                 // NormalizedTime triggers Animancer's internal AssertPlayable validation,
                 // which can throw ArgumentException when a new animation preempts this one
                 // and Animancer destroys the underlying Playable before this loop exits.
+                // InvalidOperationException is thrown when the PlayableGraph itself is
+                // destroyed (character death, scene unload, or immediate combo replacement).
                 float normalizedTime;
                 try
                 {
                     normalizedTime = state.NormalizedTime;
                 }
                 catch (System.ArgumentException)
+                {
+                    break;
+                }
+                catch (System.InvalidOperationException)
                 {
                     break;
                 }

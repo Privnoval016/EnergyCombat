@@ -101,6 +101,18 @@ namespace Combat
         private CancellationTokenSource _cts;
         private CombatContext _activeContext;
 
+        /**
+         * <summary>
+         * Monotonically-increasing counter incremented each time <see cref="LaunchExecution"/>
+         * starts a new ability. Passed into <see cref="RunExecutionAsync"/> so that only the
+         * most-recent execution's <c>finally</c> clears shared state (<see cref="IsExecuting"/>,
+         * <see cref="_activeContext"/>, <see cref="_cts"/>). Without this guard, a stale
+         * cancelled execution can overwrite those fields after the new execution has already
+         * started — the classic combo-transition race condition.
+         * </summary>
+         */
+        private int _executionGeneration;
+
         /** <summary>The currently active input buffer.</summary> */
         public CombatInputBuffer InputBuffer { get; private set; }
 
@@ -380,6 +392,24 @@ namespace Combat
                 (result.Value.WasComboTransition ||
                  ability.InterruptBehavior == ComboInterruptBehavior.PreserveCombo);
 
+            // Notify the selector BEFORE cancelling. The cancelled execution's finally will
+            // call OnAbilityInterrupted; without this flag it would reset the combo state
+            // that TryResolveCombo just established for the incoming ability.
+            if (result.Value.WasComboTransition && IsExecuting)
+                _selector.NotifyComboTransitionPending();
+
+            // When a starter fires (not advancing an existing chain), clear any lingering
+            // combo state immediately. Without this, a stale IsInCombo=true from a previous
+            // sequence blocks PreOpenFollowUpCombo during this starter's recovery (its guard
+            // is `if (IsInCombo) return`), so the new follow-up is never registered and the
+            // next press resolves against the old combo's node instead of this starter's chain.
+            // Abilities with PreserveCombo interrupt behaviour intentionally keep the chain alive.
+            if (!result.Value.WasComboTransition &&
+                ability.InterruptBehavior != ComboInterruptBehavior.PreserveCombo)
+            {
+                _selector.ResetCombo();
+            }
+
             if (IsExecuting) CancelCurrentAbility();
 
             LaunchExecution(ability, preserveCombo);
@@ -389,6 +419,7 @@ namespace Combat
         {
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
+            int generation = ++_executionGeneration;
 
             _comboPreOpened          = false;
             _abilityStartTime        = Time.unscaledTime;
@@ -396,13 +427,14 @@ namespace Combat
             IsExecuting              = true;
             _activeContext           = null;
 
-            RunExecutionAsync(ability, preserveCombo, _cts.Token).Forget();
+            RunExecutionAsync(ability, preserveCombo, _cts.Token, generation).Forget();
         }
 
         private async UniTaskVoid RunExecutionAsync(
             AbilityDefinition ability,
             bool preserveCombo,
-            CancellationToken token)
+            CancellationToken token,
+            int generation)
         {
             try
             {
@@ -410,10 +442,16 @@ namespace Combat
             }
             finally
             {
-                IsExecuting = false;
-                _activeContext = null;
-                _cts?.Dispose();
-                _cts = null;
+                // Guard: only the execution that is still current when finally runs should
+                // touch shared state. A stale cancelled execution must not set IsExecuting=false,
+                // null _activeContext, or dispose the CTS that now belongs to the new ability.
+                if (_executionGeneration == generation)
+                {
+                    IsExecuting = false;
+                    _activeContext = null;
+                    _cts?.Dispose();
+                    _cts = null;
+                }
             }
         }
 

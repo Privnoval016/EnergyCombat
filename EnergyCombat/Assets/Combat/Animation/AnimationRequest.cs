@@ -14,6 +14,7 @@ namespace Combat
     {
         /** <summary>The clip to play.</summary> */
         [Header("Clip")]
+        [Tooltip("Animation clip to play when this ability executes. Leave empty to prototype the move with no animation — pipeline phases still run using their fallback timers.")]
         public AnimationClip Clip;
 
         /** <summary>Playback speed multiplier. 1.0 = normal, 2.0 = double speed.</summary> */

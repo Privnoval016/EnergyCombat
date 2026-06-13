@@ -13,6 +13,7 @@ namespace Combat
     public class ComboNode
     {
         /** <summary>The ability that executes when this node is reached.</summary> */
+        [UnityEngine.Tooltip("The attack that plays when this combo step is reached. Assign an AbilityDefinition asset.")]
         public AbilityDefinition Ability;
 
         /**
@@ -22,6 +23,7 @@ namespace Combat
          * transition is taken.
          * </summary>
          */
+        [UnityEngine.Tooltip("Follow-up edges from this node. The first transition whose button, hold, and pause requirements match the player's input is taken. Add multiple transitions to create branching combos (e.g. Heavy→Heavy or Heavy→Light from the same node).")]
         public ComboTransition[] Transitions;
 
         /**

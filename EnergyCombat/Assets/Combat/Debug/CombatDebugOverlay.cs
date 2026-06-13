@@ -89,8 +89,19 @@ namespace Combat
 
         /**
          * <summary>
-         * Draws the combo chain section showing the current attack name, active combo definition,
-         * node index, and input window state. Colour-coded: lime = open, yellow = pre-open, red = closed.
+         * Draws the combo chain section with three independent state lines:
+         * <list type="bullet">
+         *   <item><b>Chain</b> — whether <c>IsInCombo</c> is alive. Alive means the combo pointer
+         *     is valid; dead means the next press will fire a starter. Distinct from the input
+         *     window and from the expiry timer.</item>
+         *   <item><b>Input</b> — whether the player can press right now (the
+         *     <see cref="CombatTag.ComboWindowOpen"/> recovery tag is set, or the selector is in
+         *     pre-open state). This controls whether <c>TryTriggerAbility</c> proceeds past its
+         *     early-return guard.</item>
+         *   <item><b>Expiry</b> — the auto-reset timer state. "ticking" means the countdown is
+         *     running; "held (no timer)" means <c>IsInCombo</c> is true but the timer is stopped
+         *     (either executing with the deferred window, or <c>ComboWindowDuration = 0</c>).</item>
+         * </list>
          * </summary>
          */
         private void DrawComboSection()
@@ -108,14 +119,43 @@ namespace Combat
             var comboDef = selector.CurrentComboDefinition;
             if (comboDef != null && selector.CurrentComboNodeIndex >= 0)
             {
-                string windowState = selector.IsComboWindowActive
-                    ? "<color=lime>OPEN</color>"
-                    : selector.IsPreOpened
-                        ? "<color=yellow>PRE-OPEN</color>"
-                        : "<color=red>CLOSED</color>";
+                // ── Chain state (IsInCombo) ──────────────────────────────────────────
+                // True whenever the combo pointer is valid and the expiry timer has not
+                // elapsed. The overlay previously used IsComboWindowActive (the timer)
+                // here, which showed CLOSED during execution even though chaining worked.
+                string chainState = selector.IsInCombo
+                    ? "<color=lime>ALIVE</color>"
+                    : "<color=red>DEAD</color>";
 
-                GUILayout.Label($"Combo: {comboDef.name}  node {selector.CurrentComboNodeIndex}", _labelStyle);
-                GUILayout.Label($"Window: {windowState}", _labelStyle);
+                // ── Input window ─────────────────────────────────────────────────────
+                // Reflects whether the player's press is accepted right now.
+                // ComboWindowOpen = recovery tag (AllowComboCancel / animation event).
+                // PRE-OPEN = combo set up but recovery not yet opened.
+                bool inputOpen = context != null && context.HasTag(CombatTag.ComboWindowOpen);
+                string inputState;
+                if (inputOpen)
+                    inputState = "<color=lime>OPEN</color>";
+                else if (selector.IsPreOpened)
+                    inputState = "<color=yellow>PRE-OPEN</color>";
+                else
+                    inputState = "<color=grey>waiting</color>";
+
+                // ── Expiry timer ──────────────────────────────────────────────────────
+                // "ticking"        = countdown running (started after ability completes).
+                // "held (no timer)"= IsInCombo=true but timer stopped — either the ability
+                //                    is executing with the deferred window, or
+                //                    ComboWindowDuration=0 (infinite hold after completion).
+                // "expired"        = timer elapsed, IsInCombo=false.
+                string expiryState;
+                if (selector.IsComboWindowActive)
+                    expiryState = "<color=lime>ticking</color>";
+                else if (selector.IsInCombo)
+                    expiryState = "<color=cyan>held (no timer)</color>";
+                else
+                    expiryState = "<color=red>expired</color>";
+
+                GUILayout.Label($"Combo: {comboDef.name}  node {selector.CurrentComboNodeIndex}  chain: {chainState}", _labelStyle);
+                GUILayout.Label($"Input: {inputState}  |  Expiry: {expiryState}", _labelStyle);
             }
             else
             {
