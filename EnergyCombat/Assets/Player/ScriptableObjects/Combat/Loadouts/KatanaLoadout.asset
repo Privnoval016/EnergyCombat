@@ -15,3 +15,4 @@ MonoBehaviour:
   ActiveAbilities:
   - {fileID: 11400000, guid: fee8eae93ae284d9cbfa040dd34072be, type: 2}
   - {fileID: 11400000, guid: 95cae2612385e4ce48c1029a4b0bded7, type: 2}
+  - {fileID: 11400000, guid: 2fa530eb1e84c4f6db9fbf2241343e02, type: 2}

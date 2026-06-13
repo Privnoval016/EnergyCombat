@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7eda1b211d84d46a0b92786b587f49c4, type: 3}
-  m_Name: LAtk_D5
+  m_Name: MAtk_A2
   m_EditorClassIdentifier: Assembly-CSharp::Combat.Abilities.AbilityDefinition
-  AbilityName: Light D5
+  AbilityName: Midair A2
   Tags:
   - _value: Melee
   PrimaryInput: 0
   RequireHold: 0
   HoldThreshold: 0.3
   Conditions:
-  - rid: 2379993598603296948
+  - rid: 6570460763874919010
   BaseStats: []
   AnimationRequest:
-    Clip: {fileID: 7400000, guid: c118208249f254d5a9d422e73b8389db, type: 2}
+    Clip: {fileID: 7400000, guid: ff51ec61309e44c9095997446aeef4c9, type: 2}
     Speed: 1
     UseRootMotion: 0
     LockMovement: 1
@@ -45,10 +45,23 @@ MonoBehaviour:
         PhaseName: 
         ActiveEndEvent: ActiveEnd
         FallbackDuration: 0.2
-        Hitboxes: []
-    - rid: 2379993598603296948
-      type: {class: GroundedCondition, ns: Combat, asm: Assembly-CSharp}
-      data: 
+        Hitboxes:
+        - HitboxId: Default
+          Config:
+            Shape: 0
+            Offset: {x: 0, y: 0, z: 0}
+            Radius: 0.3
+            HalfHeight: 0.5
+            CapsuleEndOffset: {x: 0, y: 0.5, z: 0}
+            BoxHalfExtents: {x: 0.3, y: 0.5, z: 0.1}
+            TargetLayers:
+              serializedVersion: 2
+              m_Bits: 127
+            TargetFilter:
+              Required: []
+              Excluded: []
+              AnyOf: []
+            MaxHitsPerSwing: 0
     - rid: 2379993598603296949
       type: {class: StartupPhase, ns: Combat, asm: Assembly-CSharp}
       data:
@@ -62,3 +75,6 @@ MonoBehaviour:
         RecoveryEndEvent: RecoveryEnd
         FallbackDuration: 0.3
         AllowComboCancel: 1
+    - rid: 6570460763874919010
+      type: {class: AirborneCondition, ns: Combat, asm: Assembly-CSharp}
+      data: 

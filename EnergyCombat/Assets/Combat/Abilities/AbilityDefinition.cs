@@ -150,6 +150,68 @@ namespace Combat
 
         #endregion
 
+        #region Aerial Behavior
+
+        /**
+         * <summary>
+         * When <c>true</c>, this ability uses <see cref="AerialGravityScaleOverride"/> instead
+         * of the global <see cref="Combat.CombatInputSettings.AerialAttackGravityScale"/> when
+         * executed in the air. Useful for moves that need a unique gravity feel — for example,
+         * a dive kick (high gravity) versus a floaty rising swipe (low gravity).
+         * </summary>
+         */
+        [Header("Aerial Behavior")]
+        [Tooltip("When enabled, overrides the global aerial gravity settings for this specific ability. Use for moves that need a unique gravity feel (e.g. a dive kick vs a floaty swipe).")]
+        public bool OverrideAerialGravity = false;
+
+        /**
+         * <summary>
+         * Gravity scale used when this ability is airborne and <see cref="OverrideAerialGravity"/>
+         * is <c>true</c>. <c>0</c> = weightless, <c>1</c> = normal gravity.
+         * </summary>
+         */
+        [Tooltip("Gravity scale for this ability when airborne. 0 = weightless, 1 = normal. Only used when Override Aerial Gravity is enabled.")]
+        [Range(0f, 1f)]
+        public float AerialGravityScaleOverride = 0.2f;
+
+        #endregion
+
+        #region Target Pull
+
+        /**
+         * <summary>
+         * When <c>true</c>, applies a brief velocity impulse toward the soft target at the
+         * moment this ability activates. Produces a natural-feeling lunge that closes small
+         * gaps mid-combo without hard-snapping across long distances.
+         * Has no effect when no target is selected.
+         * </summary>
+         */
+        [Header("Target Pull")]
+        [Tooltip("Apply a brief impulse toward the soft target when this ability starts. Useful for closing small gaps mid-combo. No effect if no target is selected.")]
+        public bool EnableTargetPull = false;
+
+        /**
+         * <summary>
+         * Magnitude of the impulse toward the soft target on ability activation.
+         * Tune to feel like a natural lunge rather than a teleport.
+         * </summary>
+         */
+        [Tooltip("Impulse magnitude toward the soft target on attack start. Tune to feel like a natural lunge rather than a teleport.")]
+        [Min(0f)]
+        public float TargetPullForce = 6f;
+
+        /**
+         * <summary>
+         * Maximum distance from the target at which the pull impulse activates.
+         * Beyond this range no pull is applied, preventing unwanted long-range snapping.
+         * </summary>
+         */
+        [Tooltip("Maximum distance at which target pull activates. Beyond this range no pull is applied. Use to prevent long-range snapping.")]
+        [Min(0f)]
+        public float TargetPullRange = 3f;
+
+        #endregion
+
         /**
          * <summary>
          * Evaluates all conditions against the given context.

@@ -260,10 +260,14 @@ public class PlayerController : MonoBehaviour, ILocomotionState
             combatController.SetTargetProvider(_softTargeting);
 
         if (combatController != null)
-            motionOrchestrator.RegisterAbility(new CombatMovementAbility(combatController));
+        {
+            motionOrchestrator.RegisterAbility(new CombatMovementAbility(combatController, motionOrchestrator));
+            motionOrchestrator.RegisterAbility(new AerialCombatAbility(combatController, motionOrchestrator));
+        }
 
         if (_softTargeting != null)
-            motionOrchestrator.AddPipelineStage(new CombatTargetFacingStage(_softTargeting, this));
+            motionOrchestrator.AddPipelineStage(new CombatTargetFacingStage(_softTargeting, this,
+                combatController?.InputSettings));
     }
 
     private void RegisterMovementAbilities()

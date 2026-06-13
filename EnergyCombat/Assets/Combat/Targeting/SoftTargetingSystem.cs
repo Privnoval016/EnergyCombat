@@ -23,6 +23,25 @@ namespace Combat.Targeting
     {
         [SerializeField] private TargetingSettings _settings;
 
+        /**
+         * <summary>
+         * Optional transform whose <c>forward</c> direction is used as the "facing" axis when
+         * scoring targeting candidates. Assign the camera transform so scoring uses the direction
+         * the <em>player is looking</em> rather than the direction the <em>character body is
+         * rotated</em>.
+         * </summary>
+         *
+         * <remarks>
+         * Without this, <see cref="DynamicPhysics.CombatTargetFacingStage"/> rotates the player
+         * body toward the current target during attacks, giving it an angle factor near 1.0 and
+         * making it virtually unbeatable regardless of scorer weights. Assigning the camera
+         * transform breaks this self-reinforcing loop so distance and off-angle candidates compete
+         * fairly. Falls back to <c>transform.forward</c> (body forward) when left unassigned.
+         * </remarks>
+         */
+        [Tooltip("Transform whose forward is used for angle scoring. Assign the camera transform to score by view direction instead of body direction. Falls back to body forward when unassigned.")]
+        [SerializeField] private Transform _facingReference;
+
         /** <inheritdoc /> */
         public ITargetable CurrentTarget { get; private set; }
 
@@ -78,7 +97,7 @@ namespace Combat.Targeting
             }
 
             Vector3 pos     = transform.position;
-            Vector3 forward = transform.forward;
+            Vector3 forward = _facingReference != null ? _facingReference.forward : transform.forward;
 
             ITargetable best      = null;
             float       bestScore = float.NegativeInfinity;

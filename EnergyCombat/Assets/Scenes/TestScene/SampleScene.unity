@@ -2574,6 +2574,10 @@ PrefabInstance:
       propertyPath: _indicatorImpl
       value: 
       objectReference: {fileID: 882868375}
+    - target: {fileID: 6651452722702424345, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
+      propertyPath: _facingReference
+      value: 
+      objectReference: {fileID: 330585546}
     - target: {fileID: 8018543644747926841, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
       propertyPath: m_Name
       value: Player

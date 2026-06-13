@@ -16,4 +16,13 @@ MonoBehaviour:
   HoldReleaseGraceWindow: 0.5
   ComboTransitionGraceWindow: 0
   AttackEntryDecelerationRate: 0
+  AerialAttackGravityScale: 0.05
+  AerialAttackVelocityDamping: 0.95
+  AerialGravityDecayPerHit: 1.25
+  MaxAerialAttacksBeforeGravityReturns: 5
+  PostAttackHoverDuration: 0.2
+  CombatFacingRotationSpeed: 25
+  EnableAerialVerticalAim: 0
+  MaxAerialPitchAngle: 10
+  AerialPitchSpeed: 8
   CombatLayerFadeOutDuration: 0.15

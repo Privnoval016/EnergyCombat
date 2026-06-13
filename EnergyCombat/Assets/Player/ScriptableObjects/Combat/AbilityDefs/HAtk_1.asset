@@ -35,7 +35,12 @@ MonoBehaviour:
   - rid: 2379993598603296942
   - rid: 2379993598603296950
   FollowUpCombo: {fileID: 11400000, guid: 89168ce6b4d3d42dcadd24f41957e4cd, type: 2}
-  InterruptBehavior: 1
+  InterruptBehavior: 0
+  OverrideAerialGravity: 0
+  AerialGravityScaleOverride: 0.2
+  EnableTargetPull: 1
+  TargetPullForce: 6
+  TargetPullRange: 3
   references:
     version: 2
     RefIds:

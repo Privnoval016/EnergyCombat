@@ -146,6 +146,7 @@ namespace DynamicPhysics
             // 4. Reset per-frame context values
             _context.GravityScale = 1f;
             _context.SteeringMultiplier = 1f;
+            _context.RotationSpeedOverride = 0f;
 
             // 5. Route requests through abilities, then tick abilities
             RouteRequestsAndTickAbilities();
@@ -429,9 +430,10 @@ namespace DynamicPhysics
             Vector3 targetDir = context.DesiredFacingDirection;
             Quaternion targetRotation = Quaternion.LookRotation(targetDir, Vector3.up);
 
-            // Smoothly rotate towards target using steering's rotation speed parameter
+            // Smoothly rotate towards target; pipeline stages may override speed via RotationSpeedOverride
+            float rotSpeed = context.RotationSpeedOverride > 0f ? context.RotationSpeedOverride : steering.RotationSpeed;
             Quaternion currentRotation = _rigidbody.rotation;
-            Quaternion newRotation = Quaternion.Lerp(currentRotation, targetRotation, steering.RotationSpeed * context.DeltaTime);
+            Quaternion newRotation = Quaternion.Lerp(currentRotation, targetRotation, rotSpeed * context.DeltaTime);
 
             _rigidbody.rotation = newRotation;
         }

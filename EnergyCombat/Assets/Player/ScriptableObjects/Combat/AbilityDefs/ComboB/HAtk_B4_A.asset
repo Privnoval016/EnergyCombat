@@ -34,7 +34,7 @@ MonoBehaviour:
   - rid: 2379993598603296949
   - rid: 2379993598603296942
   - rid: 2379993598603296950
-  FollowUpCombo: {fileID: 11400000, guid: 418ca589cb8a44ae1aa58de507d54b67, type: 2}
+  FollowUpCombo: {fileID: 0}
   InterruptBehavior: 1
   references:
     version: 2

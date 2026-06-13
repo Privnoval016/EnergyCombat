@@ -103,6 +103,18 @@ namespace Combat
 
         /**
          * <summary>
+         * Minimal context used for condition evaluation when no ability is executing.
+         * Has <see cref="CombatContext.Controller"/> set to this instance so that
+         * <see cref="ILocomotionState"/>-based conditions (Grounded, Airborne, etc.) can
+         * query the player's movement state via <c>GetComponent</c>. Without this, conditions
+         * would receive a null controller and degrade to <c>return true</c>, making every
+         * condition pass regardless of locomotion state.
+         * </summary>
+         */
+        private CombatContext _idleContext;
+
+        /**
+         * <summary>
          * Monotonically-increasing counter incremented each time <see cref="LaunchExecution"/>
          * starts a new ability. Passed into <see cref="RunExecutionAsync"/> so that only the
          * most-recent execution's <c>finally</c> clears shared state (<see cref="IsExecuting"/>,
@@ -203,8 +215,9 @@ namespace Combat
                     _hitboxRegistry[ctrl.HitboxId] = ctrl;
             }
 
-            _modifiers = new ModifierContainer();
-            _selector = new AbilitySelector(_inputSettings);
+            _modifiers    = new ModifierContainer();
+            _idleContext  = new CombatContext { Controller = this };
+            _selector     = new AbilitySelector(_inputSettings);
 
             if (_defaultLoadouts != null)
                 foreach (var l in _defaultLoadouts)
@@ -383,10 +396,11 @@ namespace Combat
                 }
             }
 
-            var result = _selector.Resolve(InputBuffer, _activeContext);
+            var resolveContext = _activeContext ?? _idleContext;
+            var result = _selector.Resolve(InputBuffer, resolveContext);
             if (result == null) return;
             var ability = result.Value.Ability;
-            if (!ability.AreConditionsMet(_activeContext ?? new CombatContext())) return;
+            if (!ability.AreConditionsMet(resolveContext)) return;
 
             bool preserveCombo = IsExecuting &&
                 (result.Value.WasComboTransition ||

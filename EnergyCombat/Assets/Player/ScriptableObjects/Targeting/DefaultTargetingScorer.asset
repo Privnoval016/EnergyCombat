@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combat.Targeting.DefaultTargetingScorer
   MaxRange: 15
   MaxAngleDegrees: 120
-  AngleWeight: 0.7
-  DistanceWeight: 0.3
+  AngleWeight: 0.5
+  DistanceWeight: 0.5
   StickinessBias: 0.2

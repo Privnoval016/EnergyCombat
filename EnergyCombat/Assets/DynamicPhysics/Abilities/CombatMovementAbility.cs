@@ -5,32 +5,43 @@ namespace DynamicPhysics
 {
     /**
      * <summary>
-     * Motion ability that suppresses joystick steering while a movement-locking attack is active.
-     * Activates automatically when <see cref="Combat.CombatController.IsMovementLocked"/> is true
-     * and sets <see cref="MotionTag.AttackMovementLocked"/> so <see cref="InputSteeringStage"/>
-     * returns zero contextual control.
+     * Motion ability that suppresses joystick steering while a movement-locking attack is active
+     * and applies per-attack target pull impulses for any executing ability that requests it.
      * </summary>
      *
      * <remarks>
-     * On activation and each tick, horizontal velocity is bled off at the rate configured by
+     * The ability activates whenever <see cref="Combat.CombatController.IsExecuting"/> is true,
+     * then stays active for the duration of the whole combo chain (deactivating only when
+     * <c>IsExecuting</c> becomes false). This ensures target pull fires for every attack in a
+     * chain — not just the first one — regardless of whether the attack locks movement.
+     *
+     * Movement locking (<see cref="MotionTag.AttackMovementLocked"/>) is applied per-tick based
+     * on the current ability's <see cref="Combat.AnimationRequest.LockMovement"/> setting, so it
+     * correctly turns on and off as the combo advances through mixed locked/unlocked attacks.
+     *
+     * Horizontal velocity deceleration on attack start is controlled by
      * <see cref="Combat.CombatInputSettings.AttackEntryDecelerationRate"/>:
      * <list type="bullet">
-     *   <item><c>0</c> (default) — instant stop: the character plants immediately on attack start.</item>
-     *   <item>Positive value — smooth ramp-out over multiple <c>FixedUpdate</c> ticks, giving a
-     *     brief momentum-carry feel before the character fully commits to the attack stance.</item>
+     *   <item><c>0</c> — instant stop on attack start.</item>
+     *   <item>Positive value — smooth ramp-out giving a brief momentum-carry feel.</item>
      * </list>
      * </remarks>
      */
     public class CombatMovementAbility : IMotionAbility
     {
         private readonly Combat.CombatController _combatController;
+        private readonly MotionOrchestrator _orchestrator;
+
+        private Combat.CombatContext _lastContext;
 
         /** <inheritdoc /> */
         public bool IsActive { get; private set; }
 
-        public CombatMovementAbility(Combat.CombatController combatController)
+        public CombatMovementAbility(Combat.CombatController combatController,
+                                     MotionOrchestrator orchestrator = null)
         {
             _combatController = combatController;
+            _orchestrator     = orchestrator;
         }
 
         /** <inheritdoc /> */
@@ -38,26 +49,42 @@ namespace DynamicPhysics
 
         /** <inheritdoc /> */
         public bool CanActivate(MotionContext context, List<MotionRequest> requests) =>
-            _combatController != null && _combatController.IsMovementLocked && !IsActive;
+            _combatController != null && _combatController.IsExecuting && !IsActive;
 
         /** <inheritdoc /> */
         public void Activate(MotionContext context)
         {
             IsActive = true;
-            context.SetTag(MotionTag.AttackMovementLocked);
-            ApplyAttackEntryDeceleration(context);
+            _lastContext = null;
         }
 
         /** <inheritdoc /> */
         public void Tick(MotionContext context, float deltaTime)
         {
-            if (_combatController == null || !_combatController.IsMovementLocked)
+            if (_combatController == null || !_combatController.IsExecuting)
             {
                 Deactivate(context);
                 return;
             }
 
-            ApplyAttackEntryDeceleration(context);
+            // Apply or remove movement lock based on the current ability's settings
+            if (_combatController.IsMovementLocked)
+            {
+                context.SetTag(MotionTag.AttackMovementLocked);
+                ApplyAttackEntryDeceleration(context);
+            }
+            else
+            {
+                context.RemoveTag(MotionTag.AttackMovementLocked);
+            }
+
+            // Fire target pull once per new attack context (covers every hit in a combo chain)
+            var activeCtx = _combatController.ActiveContext;
+            if (activeCtx != null && !ReferenceEquals(activeCtx, _lastContext))
+            {
+                _lastContext = activeCtx;
+                ApplyTargetPull(context, activeCtx.Ability);
+            }
         }
 
         /** <inheritdoc /> */
@@ -67,7 +94,29 @@ namespace DynamicPhysics
         public void Deactivate(MotionContext context)
         {
             IsActive = false;
+            _lastContext = null;
             context.RemoveTag(MotionTag.AttackMovementLocked);
+        }
+
+        /**
+         * <summary>
+         * Applies a velocity impulse toward the soft target when the ability requests it and
+         * the target is within <see cref="Combat.AbilityDefinition.TargetPullRange"/>.
+         * No-op when no orchestrator, no target, or the ability has pull disabled.
+         * </summary>
+         */
+        private void ApplyTargetPull(MotionContext context, Combat.AbilityDefinition ability)
+        {
+            if (_orchestrator == null) return;
+            if (ability == null || !ability.EnableTargetPull) return;
+
+            var target = _combatController.CurrentTarget;
+            if (target == null) return;
+
+            Vector3 toTarget = target.TargetPosition - context.Position;
+            if (toTarget.magnitude > ability.TargetPullRange) return;
+
+            _orchestrator.AddImpulse(toTarget.normalized * ability.TargetPullForce);
         }
 
         /**

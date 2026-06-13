@@ -135,6 +135,16 @@ namespace DynamicPhysics
         /** <summary>Direction the character should face. Set by PlayerRotationStage, used by rotation application.</summary> */
         public Vector3 DesiredFacingDirection;
 
+        /**
+         * <summary>
+         * Per-frame rotation speed override. When greater than zero, <c>ApplyRotation</c> uses
+         * this value instead of <see cref="SteeringSettings.RotationSpeed"/>, allowing
+         * individual pipeline stages to snap rotation faster than the locomotion default.
+         * Reset to <c>0</c> each fixed tick by the orchestrator.
+         * </summary>
+         */
+        public float RotationSpeedOverride;
+
         #endregion
 
         /**
@@ -156,6 +166,7 @@ namespace DynamicPhysics
             SteeringMultiplier = 1f;
             ControlFactor = 1f;
             DesiredFacingDirection = Vector3.zero;
+            RotationSpeedOverride = 0f;
             _tags.Clear();
         }
     }
