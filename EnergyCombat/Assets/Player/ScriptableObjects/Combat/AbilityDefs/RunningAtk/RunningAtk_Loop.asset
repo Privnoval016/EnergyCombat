@@ -63,7 +63,7 @@ MonoBehaviour:
         ExitClip: {fileID: 7400000, guid: 33aec0804a1094894a5b1ebbd118f72a, type: 2}
         ExitFadeIn: 0.1
         InputButton: 0
-        InputWindowPerLoop: 0.3
+        InputWindowPerLoop: 0.15
         ContinueConditions:
         - rid: 6570460796744368646
         - rid: 6570460801612644496

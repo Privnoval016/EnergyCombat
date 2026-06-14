@@ -1714,6 +1714,67 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1256859032}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1411318064
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.69536
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.10904
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.28103
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_Name
+      value: 9CG_Nodachi_Sword
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e04c08b11fd53a34689a3e0ae5500b1d, type: 3}
 --- !u!1 &1452161426
 GameObject:
   m_ObjectHideFlags: 0
@@ -2510,10 +2571,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1109340957248417707, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2661547421166476150, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
       propertyPath: _Target
       value: 
       objectReference: {fileID: 6877955020523922546}
+    - target: {fileID: 3289130198408236868, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
+      propertyPath: serializeData2.initData.localHash
+      value: 33822
+      objectReference: {fileID: 0}
     - target: {fileID: 4404674286758560352, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -2583,7 +2652,9 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1109340957248417707, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
+    - {fileID: 9187015451438987011, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9636b2fd39a9a4202bde125141eb6ad4, type: 3}
@@ -2729,3 +2800,4 @@ SceneRoots:
   - {fileID: 491391425}
   - {fileID: 1049374206}
   - {fileID: 319766569}
+  - {fileID: 1411318064}
