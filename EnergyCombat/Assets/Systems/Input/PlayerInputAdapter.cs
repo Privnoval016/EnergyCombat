@@ -114,6 +114,11 @@ namespace Systems.Input
             EmitButtonEvent(PlayerInputButton.Sprint, context.phase);
         }
 
+        public void OnBladeMode(InputAction.CallbackContext context)
+        {
+            
+        }
+
         private void EmitButtonEvent(PlayerInputButton button, InputActionPhase phase)
         {
             if (phase == InputActionPhase.Waiting || phase == InputActionPhase.Disabled)
