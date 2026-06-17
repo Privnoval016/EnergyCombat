@@ -57,6 +57,7 @@ public class PlayerController : MonoBehaviour, ILocomotionState
     public CameraController CameraController => cameraController;
     public CombatController CombatController => combatController;
     public PlayerAnimationController AnimationController => _animationController;
+    public PlayerInputAdapter InputAdapter => _playerInputAdapter;
 
     #endregion
 

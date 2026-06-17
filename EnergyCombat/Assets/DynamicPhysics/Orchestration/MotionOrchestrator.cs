@@ -86,6 +86,16 @@ namespace DynamicPhysics
         /** <summary>Checks whether a motion tag is currently active.</summary> */
         public bool HasTag(string motionTag) => _context.HasTag(motionTag);
 
+        /**
+         * <summary>
+         * When true the orchestrator uses <see cref="Time.fixedUnscaledDeltaTime"/> for
+         * all movement calculations and compensates rigidbody velocity so the player moves
+         * at full real-world speed even when <see cref="Time.timeScale"/> is reduced.
+         * Used by blade mode to keep the player responsive while the world is in slow-mo.
+         * </summary>
+         */
+        public bool UseUnscaledDeltaTime { get; set; }
+
         #endregion
 
         #region MonoBehaviour Lifecycle
@@ -114,11 +124,20 @@ namespace DynamicPhysics
 
         private void FixedUpdate()
         {
-            float dt = Time.fixedDeltaTime;
+            // Use unscaled time when blade mode requests full player speed during slow-mo.
+            // With Time.fixedDeltaTime = 0.02 * timeScale (set by BladeModeController),
+            // Time.fixedUnscaledDeltaTime = 0.02 regardless of timeScale — normal step size.
+            float dt = UseUnscaledDeltaTime ? Time.fixedUnscaledDeltaTime : Time.fixedDeltaTime;
 
             // 1. Snapshot current physics state
             _motor.SnapshotState(_context);
             _context.DeltaTime = dt;
+
+            // When compensating velocity (see step 8 below), the rigidbody carries a
+            // scaled-up velocity from last frame. Convert it back to intended speed so
+            // the pipeline (friction, momentum) sees the correct value.
+            if (UseUnscaledDeltaTime && Time.timeScale > 0f && Time.timeScale < 0.999f)
+                _context.Velocity *= Time.timeScale;
 
             // 2. Ground detection
             groundDetector.Detect(_context.Position);
@@ -159,6 +178,13 @@ namespace DynamicPhysics
 
             // 8. Apply to rigidbody
             _motor.ApplyVelocity(_context);
+
+            // Compensate so the player moves at full real-world speed despite scaled physics steps.
+            // Physics moves the rigidbody by velocity * fixedDeltaTime per step. With
+            // fixedDeltaTime = 0.02 * timeScale, multiplying velocity by 1/timeScale gives
+            // velocity * 0.02 per step at 50 Hz real = intended real-world displacement.
+            if (UseUnscaledDeltaTime && Time.timeScale > 0f && Time.timeScale < 0.999f)
+                _rigidbody.linearVelocity *= 1f / Time.timeScale;
 
             // 8b. Apply rotation if desired facing direction is set
             ApplyRotation(_context, _config.Steering);
@@ -461,6 +487,19 @@ namespace DynamicPhysics
         {
             if (Context.DesiredFacingDirection.sqrMagnitude < 0.01f) return;
             _rigidbody.rotation = Quaternion.LookRotation(Context.DesiredFacingDirection, Vector3.up);
+        }
+
+        /**
+         * <summary>
+         * Instantly rotates the character to face <paramref name="worldDirection"/> (horizontal only).
+         * Used by blade mode to align the player with the camera before entering the overlay.
+         * </summary>
+         */
+        public void SnapFacing(Vector3 worldDirection)
+        {
+            Vector3 flat = new Vector3(worldDirection.x, 0f, worldDirection.z);
+            if (flat.sqrMagnitude < 0.001f) return;
+            _rigidbody.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
         }
 
         #endregion

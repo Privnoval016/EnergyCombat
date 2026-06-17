@@ -46,8 +46,16 @@ namespace Combat.Targeting.UI
         private void LateUpdate()
         {
             if (_indicator == null || _targeting == null) return;
-            if (_targeting.HasTarget)
-                _indicator.ShowAt(_targeting.CurrentTarget);
+            var target = _targeting.CurrentTarget;
+            if (target == null) return;
+            // HasTarget uses C# != null which stays true for a destroyed UnityEngine.Object.
+            // Implicit bool on Object returns false for destroyed instances.
+            if (target is Object o && !o)
+            {
+                _indicator.Hide();
+                return;
+            }
+            _indicator.ShowAt(target);
         }
 
         private void HandleTargetChanged(ITargetable _, ITargetable newTarget)

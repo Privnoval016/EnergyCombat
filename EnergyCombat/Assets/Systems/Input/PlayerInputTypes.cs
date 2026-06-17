@@ -8,7 +8,8 @@ namespace Systems.Input
         Dodge,
         Sprint,
         LightAttack,
-        HeavyAttack
+        HeavyAttack,
+        BladeMode
     }
 
     public enum PlayerInputPhase

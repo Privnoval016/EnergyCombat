@@ -59,13 +59,23 @@ public class CameraController: MonoBehaviour
     {
         var cameraReference = GetCamera(mode);
 
+        // GetCamera returns default struct when mode not registered — cineCam will be null
+        if (cameraReference.cineCam == null)
+        {
+            UnityEngine.Debug.LogWarning($"[CameraController] No camera registered for {mode}. Add it to the Camera References list.", this);
+            return;
+        }
+
         if (cameraReference.baseState)
         {
             ReturnToBaseCamera();
             return;
         }
-        
-        StateMachine.ChangeState(cameraReference.Create());
+
+        // Use Interrupt (push without removing current state) so ResumePrevious / ResumeLastCamera
+        // can pop back to whatever camera was active before this switch. ChangeState removes the
+        // previous entry from the stack, leaving it empty after a ResumePrevious call.
+        StateMachine.Interrupt(cameraReference.Create());
     }
 
     public void ResumeLastCamera()
@@ -100,5 +110,6 @@ public class CameraController: MonoBehaviour
 public enum CamMode
 {
     ThirdPersonFollow,
-    OverRightShoulder
+    OverRightShoulder,
+    BladeMode
 }

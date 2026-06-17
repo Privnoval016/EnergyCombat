@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca9559e35076b49318aff695405460d3, type: 3}
+  m_Name: BladeModeSettings
+  m_EditorClassIdentifier: Assembly-CSharp::BladeMode.Core.BladeModeSettings
+  TimeScale: 0.15
+  EnterDuration: 0.25
+  ExitDuration: 0.35
+  JoystickDeadzone: 0.2
+  InvertStickRotation: 0
+  CutAngleOffset: 0
+  CutAngleVariance: 15
+  CutPlaneHeight: 0.8
+  SliceableLayers:
+    serializedVersion: 2
+    m_Bits: 127
+  DetectionRadius: 8
+  DetectionAngle: 90
+  SliceDuration: 0.15
+  DefaultCrossSectionMaterial: {fileID: 2100000, guid: 1fb5bcaa26d0b48c69db64d051669673, type: 2}
+  PhysicsSettings: {fileID: 11400000, guid: 6f184ea14ae0343b2af7995e1b6dc775, type: 2}
+  BladeCameraLookMultiplier: 0.35
+  CutPlanePrefab: {fileID: 5054922933888032176, guid: f1ad9556e6a784111a96268532c5d19a, type: 3}
+  CutPlaneScale: {x: 3.5, y: 3.5, z: 3.5}
+  CutPlanePositionOffset: {x: 0, y: 0, z: 0}
